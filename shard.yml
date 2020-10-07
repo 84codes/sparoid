@@ -1,0 +1,15 @@
+name: single-packet-authorization
+version: 0.1.0
+
+authors:
+  - 84codes <contact@84codes.com>
+
+targets:
+  spa-server:
+    main: src/server.cr
+  spa-client:
+    main: src/client.cr
+
+crystal: 0.35.1
+
+license: MIT
