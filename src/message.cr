@@ -14,8 +14,11 @@ struct Message
   end
 
   def public_ip
+    resp = HTTP::Client.get("https://checkip.amazonaws.com")
+    raise "Could not retrive public ip" unless resp.status_code == 200
+    myip = resp.body
+
     ip = StaticArray(UInt8, 4).new(0_u8)
-    myip = `dig myip.opendns.com @resolver1.opendns.com +short`.chomp
     myip.split(".").each_with_index do |part, i|
       ip[i] = part.to_u8
     end
