@@ -12,7 +12,24 @@ TODO: Write installation instructions here
 
 ## Usage
 
-TODO: Write usage instructions here
+Server:
+
+```sh
+ufw deny ssh # reject new connections to 22 by default
+
+bin/spa-server -k $key -H $hmac_key \
+  --open-cmd "ufw allow from %s to any port 22 proto tcp" \
+  --close-cmd "ufw delete allow from %s to any port 22 proto tcp"
+```
+
+Client:
+
+```sh
+bin/spa-client keygen # will output a key and a hmac_key that will be used below
+
+bin/spa-client send -k $key -H $hmac_key --host hidden.example.com
+ssh hidden.example.com
+```
 
 ## Development
 
