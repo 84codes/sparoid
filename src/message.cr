@@ -1,4 +1,5 @@
 require "random/secure"
+require "http/client"
 
 struct Message
   getter version : Int32, ts : Int64, nounce : StaticArray(UInt8, 16), ip : StaticArray(UInt8, 4)
