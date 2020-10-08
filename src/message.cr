@@ -1,5 +1,4 @@
 require "random/secure"
-require "http/client"
 
 struct Message
   getter version : Int32, ts : Int64, nounce : StaticArray(UInt8, 16), ip : StaticArray(UInt8, 4)
@@ -7,23 +6,11 @@ struct Message
   def initialize(@version, @ts, @nounce, @ip)
   end
 
-  def initialize
+  def initialize(@ip)
     @version = 1
     @ts = Time.utc.to_unix_ms
-    @nounce = StaticArray(UInt8, 16).new { Random::Secure.next_u }
-    @ip = public_ip
-  end
-
-  def public_ip
-    resp = HTTP::Client.get("https://checkip.amazonaws.com")
-    raise "Could not retrive public ip" unless resp.status_code == 200
-    myip = resp.body
-
-    ip = StaticArray(UInt8, 4).new(0_u8)
-    myip.split(".").each_with_index do |part, i|
-      ip[i] = part.to_u8
-    end
-    ip
+    @nounce = StaticArray(UInt8, 16).new(0_u8)
+    Random::Secure.random_bytes(@nounce.to_slice)
   end
 
   def to_io(io, format)

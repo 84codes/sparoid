@@ -4,6 +4,7 @@ require "random/secure"
 require "openssl/cipher"
 require "openssl/hmac"
 require "./message"
+require "./public_ip"
 
 class Client
   def self.send(key : String, hmac_key : String, host : String, port : Int32)
@@ -12,8 +13,8 @@ class Client
     raise ArgumentError.new("Key must be 32 bytes hex encoded") if key.bytesize != 32
     raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") if hmac_key.bytesize != 32
 
-    msg = Message.new.to_slice(IO::ByteFormat::NetworkEndian)
-    data = encrypt(key, hmac_key, msg)
+    msg = Message.new(PublicIP.by_dns)
+    data = encrypt(key, hmac_key, msg.to_slice(IO::ByteFormat::NetworkEndian))
     udp_send(host, port, data)
   end
 

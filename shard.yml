@@ -10,6 +10,10 @@ targets:
   spa-client:
     main: src/client.cr
 
+dependencies:
+  dns:
+    gitlab: jgillich/crystal-dns
+
 crystal: 0.35.1
 
 license: MIT
