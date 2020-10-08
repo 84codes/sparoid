@@ -3,6 +3,7 @@ require "dns"
 require "http/client"
 
 class PublicIP
+  # https://code.blogs.iiidefix.net/posts/get-public-ip-using-dns/
   def self.by_dns
     socket = UDPSocket.new
     socket.connect("resolver1.opendns.com", 53)
@@ -25,6 +26,7 @@ class PublicIP
     socket.try &.close
   end
 
+  # ifconfig.co/ip is another option
   def self.by_http
     resp = HTTP::Client.get("https://checkip.amazonaws.com")
     raise "Could not retrive public ip" unless resp.status_code == 200
