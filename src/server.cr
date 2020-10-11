@@ -23,26 +23,32 @@ class Server
       count, client_addr = socket.receive(buffer)
       if plain = decrypt(buffer[0, count])
         msg = Message.from_io(plain, IO::ByteFormat::NetworkEndian)
-        verify_nounce(msg.nounce)
         verify_ts(msg.ts)
         ip_str = ip_to_str(msg.ip)
         verify_ip(ip_str, client_addr) unless client_addr.loopback?
-        spawn(name: "") do
-          system sprintf(@open_cmd, ip_str)
-          sleep 15
-          system sprintf(@close_cmd, ip_str)
-        end
+        verify_nounce(msg.nounce)
+        spawn temp_open_fw(ip_str)
       end
     rescue ex
       STDERR.puts "ERROR: #{ex.inspect}"
     end
   end
 
-  @seen_nounces = Deque(StaticArray(UInt8, 16)).new(1024)
+  private def temp_open_fw(ip_str)
+    system sprintf(@open_cmd, ip_str)
+    return if @close_cmd.empty?
+    sleep 15
+    system sprintf(@close_cmd, ip_str)
+  end
+
+  MAX_NOUNCES = 65536 # 65536 * 16 = 1MB
+  @seen_nounces = Deque(StaticArray(UInt8, 16)).new(MAX_NOUNCES)
 
   private def verify_nounce(nounce)
-    raise "nounce seen before" if @seen_nounces.includes? nounce
-    @seen_nounces.shift if @seen_nounces.size >= 1024
+    if @seen_nounces.includes? nounce
+      raise "reply-attack, nounce seen before"
+    end
+    @seen_nounces.shift if @seen_nounces.size == MAX_NOUNCES
     @seen_nounces.push nounce
   end
 
