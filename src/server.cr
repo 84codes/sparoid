@@ -46,8 +46,12 @@ class Server
     @seen_nounces.push nounce
   end
 
+  MAX_TIMESTAMP_DIFF = 5_000
+
   private def verify_ts(ts)
-    raise "timestamp > 10s wrong" if (ts - Time.utc.to_unix_ms).abs > 10_000
+    if (Time.utc.to_unix_ms - ts).abs > MAX_TIMESTAMP_DIFF
+      raise "timestamp off by more than #{MAX_TIMESTAMP_DIFF.milliseconds.seconds}s"
+    end
   end
 
   private def ip_to_str(ip)
