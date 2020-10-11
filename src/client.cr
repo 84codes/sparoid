@@ -60,16 +60,12 @@ hmac_key = ""
 host = "0.0.0.0"
 port = 62201
 
-OptionParser.parse do |parser|
+parser = OptionParser.new do |parser|
   parser.banner = "Usage: #{PROGRAM_NAME} [subcommand] [arguments]"
   parser.invalid_option do |flag|
     STDERR.puts "ERROR: #{flag} is not a valid option."
     STDERR.puts parser
     exit 1
-  end
-  parser.on("-h", "--help", "Show this help") do
-    puts parser
-    exit
   end
   parser.on("keygen", "Generate key and hmac key") do
     subcommand = :keygen
@@ -83,7 +79,12 @@ OptionParser.parse do |parser|
     parser.on("-h host", "--host=HOST", "Host to connect to") { |v| host = v }
     parser.on("-p PORT", "--port=PORT", "UDP port") { |v| port = v.to_i }
   end
+  parser.on("-h", "--help", "Show this help") do
+    puts parser
+    exit
+  end
 end
+parser.parse
 
 begin
   case subcommand
@@ -92,9 +93,11 @@ begin
   when :send
     Client.send(key, hmac_key, host, port)
   else
-    raise "Invalid subcommand"
+    puts "Missed subcommand"
+    puts parser
+    exit 1
   end
 rescue ex
-  STDERR.puts "ERROR: #{ex.inspect_with_backtrace}"
+  STDERR.puts "ERROR: #{ex.message}"
   exit 1
 end
