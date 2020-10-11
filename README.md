@@ -1,6 +1,6 @@
 # single-packet-authorization
 
-fwknop type of SPA service, implemented in crystal.
+[fwknop type of SPA service](http://www.cipherdyne.org/fwknop/docs/fwknop-tutorial.html), implemented in crystal.
 
 The server listens on UDP, when it receives a message it tries to verify it (HMAC), decrypt it (AES-256-CBC), then verify the nounce (that it haven't been seen before, reply attack), that the timestamp is within 10s, and that the IP in the message matches the source IP.
 
