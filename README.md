@@ -8,7 +8,17 @@ If all checks passes the firewall is opened for the IP in the message. After 15s
 
 ## Installation
 
-TODO: Write installation instructions here
+Ubuntu:
+
+```bash
+wget -qO- https://packagecloud.io/cloudamqp/spa-client/gpgkey | sudo apt-key add -
+sudo cat > /etc/apt/sources.list.d/spa-client.list << EOF
+deb https://packagecloud.io/cloudamqp/spa-client/ubuntu/ $(lsb_release -cs) main
+EOF
+
+sudo apt update
+sudo apt install spa-client
+```
 
 ## Usage
 
@@ -22,6 +32,19 @@ bin/spa-server -k $key -H $hmac_key \
   --close-cmd "ufw delete allow from %s to any port 22 proto tcp"
 ```
 
+Or with a config:
+
+```sh
+ufw deny ssh # reject new connections to 22 by default
+cat > config.ini << EOF
+key = $key
+hmac-key = $hmac_key
+open-cmd  = ufw allow from %s to any port 22 proto tcp
+close-cmd = ufw delete allow from %s to any port 22 proto tcp
+EOF
+bin/spa-server --config config.ini
+```
+
 Client:
 
 ```sh
@@ -30,19 +53,3 @@ bin/spa-client keygen # will output a key and a hmac_key that will be used below
 bin/spa-client send -k $key -H $hmac_key --host hidden.example.com
 ssh hidden.example.com
 ```
-
-## Development
-
-TODO: Write development instructions here
-
-## Contributing
-
-1. Fork it (<https://github.com/your-github-user/single-packet-authorization/fork>)
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create a new Pull Request
-
-## Contributors
-
-- [your-name-here](https://github.com/your-github-user) - creator and maintainer
