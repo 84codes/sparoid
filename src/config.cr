@@ -23,6 +23,9 @@ class Config
       @close_cmd = "ufw delete allow from %s to any port 22 proto tcp"
     when File.exists?("/usr/sbin/firewall-cmd") # fedora/centos
       @open_cmd = %(firewall-cmd --add-rich-rule='rule family="ipv4" source address="%s" port protocol="tcp" port="22" accept' --timeout=15)
+    when File.exists?("/usr/sbin/iptables") # other linux systems
+      @open_cmd = %(iptables -A INPUT -p tcp --dport 22 -s %s -j ACCEPT)
+      @close_cmd = %(iptables -D INPUT -p tcp --dport 22 -s %s -j ACCEPT)
     end
   end
 
