@@ -15,7 +15,7 @@ class Server
     raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") if @hmac_key.bytesize != 32
   end
 
-  def listen(host = "0.0.0.0", port = 62201)
+  def listen(host, port)
     socket = UDPSocket.new
     socket.bind host, port
     buffer = Bytes.new(512)

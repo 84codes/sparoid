@@ -1,3 +1,4 @@
+require "ini"
 require "option_parser"
 require "socket"
 require "random/secure"
@@ -45,20 +46,17 @@ class Client
 
   def self.keygen
     cipher = OpenSSL::Cipher.new("aes-256-cbc")
-    print "key = "
-    print cipher.random_key.hexstring
-    print "\n"
-    print "hmackey = "
-    print Random::Secure.hex(32)
-    print "\n"
+    STDOUT << "key=" << cipher.random_key.hexstring << "\n"
+    STDOUT << "hmackey=" << Random::Secure.hex(32) << "\n"
   end
 end
 
 subcommand = :none
-key = ""
-hmac_key = ""
+key = ENV.fetch("KNOCK_KEY", "")
+hmac_key = ENV.fetch("KNOCK_HMAC_KEY", "")
 host = "0.0.0.0"
-port = 62201
+port = 84
+config_path = "~/.knock-knock.ini"
 
 parser = OptionParser.new do |parser|
   parser.banner = "Usage: #{PROGRAM_NAME} [subcommand] [arguments]"
@@ -76,8 +74,9 @@ parser = OptionParser.new do |parser|
     parser.banner = "Usage: #{PROGRAM_NAME} send [arguments]"
     parser.on("-k KEY", "--key=KEY", "Decryption key") { |v| key = v }
     parser.on("-H KEY", "--hmac-key=KEY", "HMAC key") { |v| hmac_key = v }
-    parser.on("-h host", "--host=HOST", "Host to connect to") { |v| host = v }
+    parser.on("-h HOST", "--host=HOST", "Host to connect to") { |v| host = v }
     parser.on("-p PORT", "--port=PORT", "UDP port") { |v| port = v.to_i }
+    parser.on("-c PATH", "--config=PATH", "Path to config file") { |v| config_path = v }
   end
   parser.on("-h", "--help", "Show this help") do
     puts parser
@@ -85,6 +84,19 @@ parser = OptionParser.new do |parser|
   end
 end
 parser.parse
+
+if File.exists? config_path
+  config = File.open(config_path) { |f| INI.parse(f) }
+  config.each do |_, section|
+    section.each do |key, value|
+      case key
+      when "key" then key = value
+      when "hmac-key" then hmac_key = value
+      else abort "Unrecognized config key #{key}"
+      end
+    end
+  end
+end
 
 begin
   case subcommand

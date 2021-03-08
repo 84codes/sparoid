@@ -5,7 +5,7 @@ class Config
   getter key = "000000000000000000000000000000000000000000000000000000000000000000"
   getter hmac_key = "000000000000000000000000000000000000000000000000000000000000000000"
   getter host = "0.0.0.0"
-  getter port = 62201
+  getter port = 84
   getter open_cmd = ""
   getter close_cmd = ""
   @config_path : String? = nil
@@ -62,11 +62,11 @@ class Config
         values.each do |k, v|
           case k
           when "key" then @key = v
-          when "hmac_key" then @hmac_key = v
+          when "hmac-key" then @hmac_key = v
           when "bind" then @host = v
           when "port" then @port = v.to_i
-          when "open_cmd" then @open_cmd = v
-          when "close_cmd" then @close_cmd = v
+          when "open-cmd" then @open_cmd = v
+          when "close-cmd" then @close_cmd = v
           end
         end
       end
