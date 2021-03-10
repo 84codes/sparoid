@@ -5,7 +5,7 @@ class Config
   getter key = "000000000000000000000000000000000000000000000000000000000000000000"
   getter hmac_key = "000000000000000000000000000000000000000000000000000000000000000000"
   getter host = "0.0.0.0"
-  getter port = 84
+  getter port = 8484
   getter open_cmd = ""
   getter close_cmd = ""
   @config_path : String? = nil

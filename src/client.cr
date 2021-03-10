@@ -55,8 +55,8 @@ subcommand = :none
 key = ENV.fetch("KNOCK_KEY", "")
 hmac_key = ENV.fetch("KNOCK_HMAC_KEY", "")
 host = "0.0.0.0"
-port = 84
-config_path = "~/.knock-knock.ini"
+port = 8484
+config_path = "~/.sparoid.ini"
 
 parser = OptionParser.new do |parser|
   parser.banner = "Usage: #{PROGRAM_NAME} [subcommand] [arguments]"
