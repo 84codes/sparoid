@@ -11,22 +11,9 @@ class Config
   @config_path : String? = nil
 
   def initialize
-    default_cmds
     parse_options
     parse_config
-  end
-
-  private def default_cmds
-    case
-    when File.exists?("/usr/sbin/ufw") # ubuntu
-      @open_cmd  = "ufw allow from %s to any port 22 proto tcp"
-      @close_cmd = "ufw delete allow from %s to any port 22 proto tcp"
-    when File.exists?("/usr/sbin/firewall-cmd") # fedora/centos
-      @open_cmd = %(firewall-cmd --add-rich-rule='rule family="ipv4" source address="%s" port protocol="tcp" port="22" accept' --timeout=15)
-    when File.exists?("/usr/sbin/iptables") # other linux systems
-      @open_cmd = %(iptables -A INPUT -p tcp --dport 22 -s %s -j ACCEPT)
-      @close_cmd = %(iptables -D INPUT -p tcp --dport 22 -s %s -j ACCEPT)
-    end
+    STDOUT.puts "WARN: No open cmd specified" if open_cmd.empty?
   end
 
   private def parse_options
