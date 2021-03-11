@@ -56,7 +56,7 @@ key = ""
 hmac_key = ""
 host = "0.0.0.0"
 port = 8484
-config_path = "~/.sparoid.ini"
+config_path = File.expand_path "~/.sparoid.ini", home: true
 
 parser = OptionParser.new do |parser|
   parser.banner = "Usage: #{PROGRAM_NAME} [subcommand] [arguments]"
@@ -76,7 +76,7 @@ parser = OptionParser.new do |parser|
     parser.on("-H KEY", "--hmac-key=KEY", "HMAC key") { |v| hmac_key = v }
     parser.on("-h HOST", "--host=HOST", "Host to connect to") { |v| host = v }
     parser.on("-p PORT", "--port=PORT", "UDP port") { |v| port = v.to_i }
-    parser.on("-c PATH", "--config=PATH", "Path to config file") { |v| config_path = v }
+    parser.on("-c PATH", "--config=PATH", "Path to config file") { |v| config_path = File.expand_path(v, home: true) }
   end
   parser.on("-h", "--help", "Show this help") do
     puts parser
@@ -88,11 +88,11 @@ parser.parse
 if File.exists? config_path
   config = File.open(config_path) { |f| INI.parse(f) }
   config.each do |_, section|
-    section.each do |key, value|
-      case key
-      when "key" then key = value
-      when "hmac-key" then hmac_key = value
-      else abort "Unrecognized config key #{key}"
+    section.each do |k, v|
+      case k
+      when "key" then key = v
+      when "hmac-key" then hmac_key = v
+      else abort "Unrecognized config key #{k}"
       end
     end
   end
