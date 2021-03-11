@@ -21,20 +21,23 @@ class Server
     buffer = Bytes.new(512)
     loop do
       count, client_addr = socket.receive(buffer)
-      if plain = decrypt(buffer[0, count])
+      packet = buffer[0, count]
+      begin
+        encrypted = verify_packet(packet)
+        plain = decrypt(encrypted)
         msg = Message.from_io(plain, IO::ByteFormat::NetworkEndian)
         verify_ts(msg.ts)
         ip_str = ip_to_str(msg.ip)
         verify_ip(ip_str, client_addr) unless client_addr.loopback?
         verify_nounce(msg.nounce)
-        spawn temp_open_fw(ip_str)
+        spawn open_then_close(ip_str)
+      rescue ex
+        STDERR.puts "ERROR: #{ex.inspect} (#{client_addr.address})"
       end
-    rescue ex
-      STDERR.puts "ERROR: #{ex.inspect}"
     end
   end
 
-  private def temp_open_fw(ip_str)
+  private def open_then_close(ip_str)
     system sprintf(@open_cmd, ip_str)
     return if @close_cmd.empty?
     sleep 15
@@ -73,12 +76,15 @@ class Server
     raise "source ip doesn't match" if ip_str != client_addr.address
   end
 
-  private def decrypt(data : Bytes) : IO::Memory?
+  private def verify_packet(data : Bytes) : Bytes
     packet_mac = data[0, 32]
     data += 32
     mac = OpenSSL::HMAC.digest(OpenSSL::Algorithm::SHA256, @hmac_key, data)
-    return unless mac == packet_mac
-    
+    raise "HMAC didn't match" unless mac == packet_mac
+    data
+  end
+
+  private def decrypt(data : Bytes) : IO::Memory
     cipher = OpenSSL::Cipher.new("aes-256-cbc")
     cipher.decrypt
     cipher.key = @key
@@ -89,14 +95,14 @@ class Server
     io.write cipher.final
     io.rewind
     io
-  rescue ex
-    STDERR.puts "Decrypt failed: #{ex.message}"
-    nil
   end
 end
 
 begin
   c = Config.new
+  puts "Listening: #{c.host}:#{c.port}"
+  puts "Open command: #{c.open_cmd}"
+  puts "Close command: #{c.close_cmd}"
   Server.new(c.key, c.hmac_key, c.open_cmd, c.close_cmd).listen(c.host, c.port)
 rescue ex
   STDERR.puts "ERROR: #{ex.message}"
