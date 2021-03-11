@@ -27,12 +27,13 @@ class Server
         plain = decrypt(encrypted)
         msg = Message.from_io(plain, IO::ByteFormat::NetworkEndian)
         verify_ts(msg.ts)
-        ip_str = ip_to_str(msg.ip)
+        ip_str = ip_to_s(msg.ip)
         verify_ip(ip_str, client_addr) unless client_addr.loopback?
         verify_nounce(msg.nounce)
+        puts "#{client_addr} packet accepted"
         spawn open_then_close(ip_str)
       rescue ex
-        STDERR.puts "ERROR: #{ex.inspect} (#{client_addr.address})"
+        puts "#{client_addr} ERROR: #{ex.message}"
       end
     end
   end
@@ -63,11 +64,11 @@ class Server
     end
   end
 
-  private def ip_to_str(ip)
+  private def ip_to_s(ip)
     String.build(15) do |str|
       ip.each_with_index do |part, i|
-        str << "." unless i == 0
-        str << part.to_s
+        str << '.' unless i == 0
+        str << part
       end
     end
   end
