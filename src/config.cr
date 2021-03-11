@@ -4,16 +4,15 @@ require "ini"
 class Config
   getter key = "000000000000000000000000000000000000000000000000000000000000000000"
   getter hmac_key = "000000000000000000000000000000000000000000000000000000000000000000"
-  getter host = "0.0.0.0"
+  getter host = "127.0.0.1"
   getter port = 8484
-  getter open_cmd = ""
-  getter close_cmd = ""
+  getter open_cmd = "echo 'open %s'"
+  getter close_cmd = "echo 'close %s'"
   @config_path : String? = nil
 
   def initialize
     parse_options
     parse_config
-    STDOUT.puts "WARN: No open cmd specified" if open_cmd.empty?
   end
 
   private def parse_options
