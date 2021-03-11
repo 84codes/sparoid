@@ -1,13 +1,13 @@
-name: single-packet-authorization
+name: sparoid
 version: 0.1.0
 
 authors:
   - 84codes <contact@84codes.com>
 
 targets:
-  spa-server:
+  sparoid-server:
     main: src/server.cr
-  spa-client:
+  sparoid:
     main: src/client.cr
 
 dependencies:
