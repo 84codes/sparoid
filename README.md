@@ -14,12 +14,10 @@ Ubuntu:
 
 ```sh
 wget -qO- https://packagecloud.io/cloudamqp/sparoid/gpgkey | sudo apt-key add -
-sudo cat > /etc/apt/sources.list.d/sparoid.list << EOF
-deb https://packagecloud.io/cloudamqp/sparoid/ubuntu/ $(lsb_release -cs) main
-EOF
-
-sudo apt update
-sudo apt install sparoid-client sparoid-server
+echo "deb https://packagecloud.io/cloudamqp/sparoid/ubuntu/ $(lsb_release -cs) main" |\
+  sudo tee /etc/apt/sources.list.d/sparoid.list
+sudo apt-get update
+sudo apt-get install -y sparoid
 ```
 
 ## Usage
@@ -27,7 +25,7 @@ sudo apt install sparoid-client sparoid-server
 Server:
 
 ```sh
-iptables -A INPUT -p tcp --dport 22 -j DROP # reject new connections to 22 by default
+iptables -A INPUT -p tcp --dport 22 -m state --state NEW -j DROP # reject new connections to 22 by default
 bin/sparoid-server -k $key -H $hmac_key \
   --open-cmd "iptables -I INPUT -p tcp --dport 22 -s %s -j ACCEPT" \
   --close-cmd "iptables -D INPUT -p tcp --dport 22 -s %s -j ACCEPT"
@@ -38,10 +36,12 @@ Or with a config:
 ```sh
 iptables -A INPUT -p tcp --dport 22 -j DROP # block connections to port 22
 cat > config.ini << EOF
+bind = 0.0.0.0
+port = 8484
 key = $key
 hmac-key = $hmac_key
-open_cmd = iptables -I INPUT -p tcp --dport 22 -s %s -j ACCEPT
-close_cmd = iptables -D INPUT -p tcp --dport 22 -s %s -j ACCEPT
+open-cmd = iptables -I INPUT -p tcp --dport 22 -s %s -j ACCEPT
+close-cmd = iptables -D INPUT -p tcp --dport 22 -s %s -j ACCEPT
 EOF
 bin/sparoid-server --config config.ini
 ```
