@@ -46,8 +46,8 @@ class Client
 
   def self.keygen
     cipher = OpenSSL::Cipher.new("aes-256-cbc")
-    STDOUT << "key=" << cipher.random_key.hexstring << "\n"
-    STDOUT << "hmackey=" << Random::Secure.hex(32) << "\n"
+    STDOUT << "key = " << cipher.random_key.hexstring << "\n"
+    STDOUT << "hmac-key = " << Random::Secure.hex(32) << "\n"
   end
 end
 
