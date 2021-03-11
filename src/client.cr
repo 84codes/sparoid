@@ -52,8 +52,8 @@ class Client
 end
 
 subcommand = :none
-key = ENV.fetch("KNOCK_KEY", "")
-hmac_key = ENV.fetch("KNOCK_HMAC_KEY", "")
+key = ""
+hmac_key = ""
 host = "0.0.0.0"
 port = 8484
 config_path = "~/.sparoid.ini"
