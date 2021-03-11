@@ -1,0 +1,151 @@
+#!/bin/bash
+set -euo pipefail
+
+trap "cd '$PWD'; rm -rf debroot debian-binary control.tar.gz data.tar.gz" EXIT
+
+. /etc/lsb-release
+
+pkg_version=${1:-$(git describe --tags | cut -c2- )}
+pkg_revision=${2:-1}
+architecture=${3:-$(dpkg --print-architecture)}
+
+if [ "$architecture" != "$(dpkg --print-architecture)" ]
+then
+  shards install --production
+  build/cross-compile-with-docker src/client.cr "ubuntu:$DISTRIB_RELEASE" true
+  build/cross-compile-with-docker src/server.cr "ubuntu:$DISTRIB_RELEASE" true
+  mv bin/client bin/sparoid
+  mv bin/server bin/sparoid-server
+else
+  shards build --production --release --stats
+  strip bin/*
+fi
+
+mkdir debroot
+cd debroot
+
+mkdir -p usr/bin usr/share/doc/sparoid lib/systemd/system/ etc usr/share/man/man1
+cp ../bin/* usr/bin/
+cp ../README.md usr/share/doc/sparoid/README
+
+cat > etc/sparoid.ini << EOF
+bind      = 127.0.0.1
+port      = 8484
+key       = 000000000000000000000000000000000000000000000000000000000000000000
+hmac-key  = 000000000000000000000000000000000000000000000000000000000000000000
+open_cmd  = iptables -I INPUT -p tcp --dport 22 -s %s -j ACCEPT
+close_cmd = iptables -D INPUT -p tcp --dport 22 -s %s -j ACCEPT
+EOF
+chmod 650 etc/sparoid.ini
+
+cat > usr/share/doc/sparoid/copyright << EOF
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: SPAroid
+Upstream-Contact: contact@84codes.com
+Source: https://github.com/84codes/sparoid
+Files: *
+Copyright: 2021, 84codes AB
+License: Apache-2.0
+EOF
+
+gzip -9 > usr/share/man/man1/sparoid.1.gz << EOF
+.TH sparoid "1" "$(date +'%B %Y')" "sparoid $pkg_version" "User Commands"
+.SH NAME
+sparoid \- Single Packet Authorization client
+.SH SYNOPSIS
+sparoid [arguments]
+.SH DESCRIPTION
+Single Packet Authorization client, sends an encrypted UDP packet to a server that then will open the firewall for you.
+.SH OPTIONS
+.TP
+\-\-help
+display all options
+.SH SEE ALSO
+https://github.com/84codes/sparoid/#readme
+EOF
+
+gzip -9 > usr/share/man/man1/sparoid-server.1.gz << EOF
+.TH sparoid-server "1" "$(date +'%B %Y')" "sparoid $pkg_version" "User Commands"
+.SH NAME
+sparoid-server \- Single Packet Authorization server
+.SH SYNOPSIS
+sparoid-server [arguments]
+.SH DESCRIPTION
+An UDP server that on the arrival of a encrypted UDP packet execute a command with the source IP as argument.
+.SH OPTIONS
+.TP
+\-\-help
+display all options
+.SH SEE ALSO
+https://github.com/84codes/sparoid/#readme
+EOF
+
+gzip -9 > usr/share/doc/sparoid/changelog.Debian.gz << EOF
+sparoid ($pkg_version-$pkg_revision) whatever; urgency=medium
+
+  * New upstream release.
+
+ -- 84codes <contact@84codes.com>  $(LC_ALL=C date -R)
+EOF
+
+cat > lib/systemd/system/sparoid-server.service << 'EOF'
+[Unit]
+Description=SPAroid - Single Packet Authorization
+Documentation=https://github.com/84codes/sparoid
+Requires=network.target
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/sparoid-server --config /etc/sparoid.ini
+Restart=on-failure
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+mkdir DEBIAN
+find . -type f -not -path "./DEBIAN/*" -print0 | xargs -0 md5sum > DEBIAN/md5sums
+
+cat > DEBIAN/control << EOF
+Package: sparoid
+Version: $pkg_version-$pkg_revision
+Homepage: https://github.com/84codes/sparoid
+Section: net
+Priority: optional
+Architecture: $architecture
+Depends: libc6, libssl1.1, libpcre3, zlib1g, libgcc1, libgc1c2, $(dpkg -S libevent-2.1 | awk -F: "/$(dpkg --print-architecture)/ { print \$1 }" | sort -u | paste -sd,)
+Installed-Size: $(du -ks usr/ | cut -f 1)
+Maintainer: CloudAMQP Team <contact@84codes.com>
+Description: Single Packet Authorization
+ An UDP server that on the arrival of a encrypted UDP packet execute a command with the source IP as argument. The package includes both the client and the server.
+EOF
+
+cat > DEBIAN/conffiles << EOF
+/etc/sparoid.ini
+EOF
+
+cat > DEBIAN/postinst << EOF
+#!/bin/sh -e
+deb-systemd-helper enable sparoid-server.service
+deb-systemd-invoke start sparoid-server.service
+EOF
+chmod +x DEBIAN/postinst
+
+cat > DEBIAN/prerm << EOF
+#!/bin/sh -e
+deb-systemd-invoke stop sparoid-server.service
+deb-systemd-helper purge sparoid-server.service
+EOF
+chmod +x DEBIAN/prerm
+
+cd ..
+
+debdir=builds/debian/$DISTRIB_CODENAME
+debname=sparoid_$pkg_version-${pkg_revision}_$architecture.deb
+mkdir -p "$debdir"
+
+echo 2.0 > debian-binary
+tar c --directory debroot/DEBIAN . | gzip -9 > control.tar.gz
+tar c --directory debroot --exclude=./DEBIAN . | gzip -9 > data.tar.gz
+ar rc "$debdir/$debname" debian-binary control.tar.gz data.tar.gz
