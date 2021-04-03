@@ -11,13 +11,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Crystal Ameba Linter
+        uses: crystal-ameba/github-action@v0.2.11
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Shards install
         run: shards install --ignore-crystal-version
 
       - name: Spec
         run: crystal spec --no-color --order random
 
-      - name: Crystal Ameba Linter
-        uses: crystal-ameba/github-action@v0.2.9
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
