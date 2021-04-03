@@ -9,9 +9,10 @@ pkg_version=${1:-$(git describe --tags | cut -c2- )}
 pkg_revision=${2:-1}
 architecture=${3:-$(dpkg --print-architecture)}
 
+shards install --production --ignore-crystal-version
+
 if [ "$architecture" != "$(dpkg --print-architecture)" ]
 then
-  shards install --production
   build/cross-compile-with-docker src/client.cr "ubuntu:$DISTRIB_RELEASE" true
   build/cross-compile-with-docker src/server.cr "ubuntu:$DISTRIB_RELEASE" true
   mv bin/client bin/sparoid
