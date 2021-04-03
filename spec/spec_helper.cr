@@ -1,2 +1,3 @@
 require "spec"
-require "../src/single-packet-authorization"
+require "../src/sparoid/server"
+require "../src/sparoid/client"
