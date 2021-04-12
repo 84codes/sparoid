@@ -2,6 +2,7 @@ require "socket"
 require "random/secure"
 require "openssl/cipher"
 require "openssl/hmac"
+require "fdpass"
 require "./message"
 require "./public_ip"
 
@@ -15,6 +16,11 @@ class Client
     msg = Message.new(PublicIP.by_dns)
     data = encrypt(key, hmac_key, msg.to_slice(IO::ByteFormat::NetworkEndian))
     udp_send(host, port, data)
+  end
+
+  def self.fdpass(host, port)
+    socket = TCPSocket.new(host, port)
+    FDPass.send_fd(1, socket.fd)
   end
 
   private def self.udp_send(host, port, data)

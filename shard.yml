@@ -13,7 +13,9 @@ targets:
 dependencies:
   dns:
     gitlab: jgillich/crystal-dns
+  fdpass:
+    github: 84codes/fdpass.cr
 
-crystal: 0.35.1
+crystal: 1.0.0
 
 license: MIT

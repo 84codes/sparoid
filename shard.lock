@@ -4,3 +4,7 @@ shards:
     git: https://gitlab.com/jgillich/crystal-dns.git
     version: 0.1.1
 
+  fdpass:
+    git: https://github.com/84codes/fdpass.cr.git
+    version: 0.1.0+git.commit.bb8184714b9d48898e88131727e55fafd8d77885
+
