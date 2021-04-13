@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+docker=$(command -v podman || command -v docker)
+pkg_revision=${1:-1}
+pkg_platform=$(uname -s | tr "[:upper:]" "[:lower:]")-$(uname -m)
+pkg_version=$(shards version)
+$docker run --rm -v $PWD:/workspace:Z -w /workspace crystallang/crystal:latest-alpine \
+  shards build --release --production --no-debug --static --ignore-crystal-version
+strip bin/*
+rm -rf sparoid
+mkdir sparoid
+cp -r bin sparoid/
+cp LICENSE README.md sparoid/
+tar zcvf sparoid-$pkg_version-$pkg_revision.$pkg_platform-static.tar.gz sparoid/*
+rm -r sparoid
+echo sparoid-$pkg_version-$pkg_revision.$pkg_platform-static.tar.gz
