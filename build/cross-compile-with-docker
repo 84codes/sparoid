@@ -2,13 +2,8 @@
 srcfile=$1
 image=${2:-ubuntu:20.04}
 strip=$3
-# cross-compile often fails in crystal 0.35, so retry
-set +e
-while true
-do
-  buildcmd=$(env CFLAGS="-fPIC" crystal build --cross-compile --target=aarch64-unknown-linux-gnu --release "$srcfile") && break
-done
-set -e
+
+buildcmd=$(env CFLAGS="-fPIC" crystal build --cross-compile --target=aarch64-unknown-linux-gnu --release "$srcfile")
 
 if ! (grep -q '"experimental": true' /etc/docker/daemon.json)
 then
@@ -17,23 +12,18 @@ then
   sudo apt-get install -y --no-install-recommends qemu-user-static
 fi
 
-docker run --name builder --platform arm64 -v "$PWD":/work -it -d "$image" bash || true
-docker exec -i builder bash << EOF
+mkdir -p bin/
+
+docker run --rm --platform arm64 -v "$PWD":/work -it "$image" /bin/bash << EOF
 set -eux
-[ -f /usr/share/crystal/src/ext/libcrystal.a ] && exit 0
 apt-get update
-apt-get install -y wget clang libssl-dev libpcre3-dev libgc-dev libevent-dev zlib1g-dev libsystemd-dev
-wget https://raw.githubusercontent.com/crystal-lang/crystal/master/src/ext/sigfault.c
+apt-get install -y wget clang libssl-dev libpcre3-dev libgc-dev libevent-dev zlib1g-dev
+wget https://raw.githubusercontent.com/crystal-lang/crystal/1.0.0/src/ext/sigfault.c
 cc -c -o sigfault.o sigfault.c
 ar -rcs libcrystal.a sigfault.o
 mkdir -p /usr/share/crystal/src/ext
 cp libcrystal.a /usr/share/crystal/src/ext/
-EOF
 
-mkdir -p bin/
-
-docker exec -i builder bash << EOF
-set -eux
 cd /work
 $buildcmd
 rm $(basename "$srcfile" .cr).o
