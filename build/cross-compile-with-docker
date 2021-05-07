@@ -4,6 +4,7 @@ image=${2:-ubuntu:20.04}
 strip=$3
 
 buildcmd=$(env CFLAGS="-fPIC" crystal build --cross-compile --target=aarch64-unknown-linux-gnu --release "$srcfile")
+buildcmd=$(echo $buildcmd | sed "s|$PWD|/work|")
 
 if ! (grep -q '"experimental": true' /etc/docker/daemon.json)
 then
