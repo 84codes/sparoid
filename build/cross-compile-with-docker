@@ -25,7 +25,7 @@ mkdir -p /usr/share/crystal/src/ext
 cp libcrystal.a /usr/share/crystal/src/ext/
 
 cd /work
-gcc -Wall -O3 -c lib/fdpass/src/fdpass.c -o lib/fdpass/src/fdpass.o
+cc -Wall -O3 -c lib/fdpass/src/fdpass.c -o lib/fdpass/src/fdpass.o
 $buildcmd
 rm $(basename "$srcfile" .cr).o
 mv $(basename "$srcfile" .cr) bin/
