@@ -1,3 +1,7 @@
+## [1.0.2] - 2021-05-07
+
+- Building deb packages for ARM and x86_64 are now working again
+
 ## [1.0.1] - 2021-04-13
 
 - SSH ProxyCommand support, sparoid connect, which send SPA, TCP connect and pass the FD to parent
