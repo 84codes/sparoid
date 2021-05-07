@@ -14,7 +14,7 @@ fi
 
 mkdir -p bin/
 
-docker run --rm --platform arm64 -v "$PWD":/work -it "$image" /bin/bash << EOF
+docker run --rm --platform arm64 -v "$PWD":/work -i "$image" /bin/bash << EOF
 set -eux
 apt-get update
 apt-get install -y wget clang libssl-dev libpcre3-dev libgc-dev libevent-dev zlib1g-dev
