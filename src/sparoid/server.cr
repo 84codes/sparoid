@@ -32,7 +32,7 @@ class Server
         msg = Message.from_io(plain, IO::ByteFormat::NetworkEndian)
         verify_ts(msg.ts)
         ip_str = ip_to_s(msg.ip)
-        verify_ip(ip_str, client_addr) unless client_addr.loopback?
+        verify_ip(ip_str, client_addr)
         verify_nounce(msg.nounce)
         puts "#{client_addr} packet accepted"
         spawn open_then_close(ip_str)
@@ -85,7 +85,7 @@ class Server
   end
 
   private def verify_ip(ip_str, client_addr)
-    raise "source ip doesn't match" if ip_str != client_addr.address
+    ip_str == client_addr.address || raise "source ip doesn't match"
   end
 
   private def verify_packet(data : Bytes) : Bytes

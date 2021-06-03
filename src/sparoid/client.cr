@@ -13,7 +13,12 @@ class Client
     raise ArgumentError.new("Key must be 32 bytes hex encoded") if key.bytesize != 32
     raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") if hmac_key.bytesize != 32
 
-    msg = Message.new(PublicIP.by_dns)
+    myip = if {"localhost", "127.0.0.1"}.includes? host
+             StaticArray[127u8, 0u8, 0u8, 1u8]
+           else
+             PublicIP.by_dns
+           end
+    msg = Message.new(myip)
     data = encrypt(key, hmac_key, msg.to_slice(IO::ByteFormat::NetworkEndian))
     udp_send(host, port, data)
   end
