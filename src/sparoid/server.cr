@@ -16,15 +16,17 @@ class Server
     @socket = UDPSocket.new
   end
 
-  def listen(host, port)
+  def bind(host, port)
+    @socket.bind host, port
+  end
+
+  def listen
     socket = @socket
-    socket.bind host, port
-    buffer = Bytes.new(96)
+    packet = Bytes.new(96)
     loop do
-      count, client_addr = socket.receive(buffer)
+      count, client_addr = socket.receive(packet)
       begin
         raise "Expected UDP packet to be 96 bytes, got #{count} bytes" if count != 96
-        packet = buffer[0, count]
         encrypted = verify_packet(packet)
         plain = decrypt(encrypted)
         msg = Message.from_io(plain, IO::ByteFormat::NetworkEndian)
