@@ -3,8 +3,8 @@ require "option_parser"
 require "./sparoid/client"
 
 subcommand = :none
-key = ""
-hmac_key = ""
+key = ENV.fetch("SPAROID_KEY", "")
+hmac_key = ENV.fetch("SPAROID_HMAC_KEY", "")
 host = "0.0.0.0"
 port = 8484
 tcp_port = 22
