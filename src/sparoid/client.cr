@@ -21,6 +21,7 @@ class Client
     msg = Message.new(myip)
     data = encrypt(key, hmac_key, msg.to_slice(IO::ByteFormat::NetworkEndian))
     udp_send(host, port, data)
+    sleep 0.02 # sleep a short while to allow the receiver to parse and execute the packet
   end
 
   def self.fdpass(host, port)
