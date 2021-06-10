@@ -8,7 +8,7 @@ class Config
   getter port = 8484
   getter open_cmd = "echo 'open %s'"
   getter close_cmd = "echo 'close %s'"
-  @config_path : String? = nil
+  getter config_file = "/etc/sparoid.ini"
 
   def initialize
     parse_options
@@ -18,18 +18,7 @@ class Config
   private def parse_options
     OptionParser.parse do |parser|
       parser.banner = "Usage: #{PROGRAM_NAME} [arguments]"
-      parser.on("-c CONFIG", "--config=CONFIG", "Path to config file") { |v| @config_path = v }
-      parser.on("-k KEY", "--key=KEY", "Decryption key") { |v| @key = v }
-      parser.on("-H KEY", "--hmac-key=KEY", "HMAC key") { |v| @hmac_key = v }
-      parser.on("-b HOST", "--bind=HOST", "Address to listen on") { |v| @host = v }
-      parser.on("-p PORT", "--port=PORT", "Port to listen on") { |v| @port = v.to_i }
-      parser.on("--open-cmd CMD", "Command to open the firewall, %s will be replace with the IP") do |v|
-        open_cmd = v
-      end
-      parser.on("--close-cmd CMD", "Command to close the firewall, %s will be replace with the IP") do |v|
-        close_cmd = v
-      end
-
+      parser.on("-c CONFIG", "--config=CONFIG", "Path to config file (default: /etc/sparoid.ini)") { |v| @config_file = v }
       parser.on("-h", "--help", "Show this help") do
         puts parser
         exit
@@ -44,8 +33,7 @@ class Config
   end
 
   private def parse_config
-    cp = @config_path || return
-    File.open(cp) do |f|
+    File.open(@config_file) do |f|
       INI.parse(f).each do |_, values|
         # ignore sections, assume there's only the empty
         values.each do |k, v|
@@ -61,7 +49,7 @@ class Config
       end
     end
   rescue File::NotFoundError
-    STDERR.puts "Config file '#{cp}' not found"
+    STDERR.puts "Config file '#{@config_file}' not found"
     exit 1
   end
 end
