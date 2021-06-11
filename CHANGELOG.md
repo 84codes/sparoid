@@ -1,3 +1,7 @@
+## [1.0.3] - 2021-06-11
+
+- Put all classes in the Sparoid namespace/module
+
 ## [1.0.2] - 2021-05-07
 
 - Building deb packages for ARM and x86_64 are now working again
