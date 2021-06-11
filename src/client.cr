@@ -17,6 +17,10 @@ parser = OptionParser.new do |p|
     STDERR.puts p
     exit 1
   end
+  p.on("--help", "Show this help") do
+    puts p
+    exit
+  end
   p.on("keygen", "Generate key and hmac key") do
     subcommand = :keygen
     p.banner = "Usage: #{PROGRAM_NAME} keygen"
@@ -40,10 +44,6 @@ parser = OptionParser.new do |p|
     p.on("-P PORT", "--tcp-port=PORT", "TCP port") { |v| tcp_port = v.to_i }
     p.on("-c PATH", "--config=PATH", "Path to config file") { |v| config_path = File.expand_path(v, home: true) }
   end
-  p.on("-h", "--help", "Show this help") do
-    puts p
-    exit
-  end
 end
 parser.parse
 
@@ -63,12 +63,12 @@ end
 begin
   case subcommand
   when :keygen
-    Client.keygen
+    Sparoid::Client.keygen
   when :send
-    Client.send(key, hmac_key, host, port)
+    Sparoid::Client.send(key, hmac_key, host, port)
   when :connect
-    Client.send(key, hmac_key, host, port)
-    Client.fdpass(host, tcp_port)
+    Sparoid::Client.send(key, hmac_key, host, port)
+    Sparoid::Client.fdpass(host, tcp_port)
   else
     puts "Missed subcommand"
     puts parser
