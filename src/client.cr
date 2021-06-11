@@ -1,80 +1,64 @@
-require "ini"
-require "option_parser"
-require "./sparoid/client"
+require "socket"
+require "random/secure"
+require "openssl/cipher"
+require "openssl/hmac"
+require "fdpass"
+require "./message"
+require "./public_ip"
 
-subcommand = :none
-key = ENV.fetch("SPAROID_KEY", "")
-hmac_key = ENV.fetch("SPAROID_HMAC_KEY", "")
-host = "0.0.0.0"
-port = 8484
-tcp_port = 22
-config_path = File.expand_path "~/.sparoid.ini", home: true
+module Sparoid
+  class Client
+    def self.send(key : String, hmac_key : String, host : String, port : Int32)
+      key = key.hexbytes
+      hmac_key = hmac_key.hexbytes
+      raise ArgumentError.new("Key must be 32 bytes hex encoded") if key.bytesize != 32
+      raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") if hmac_key.bytesize != 32
 
-parser = OptionParser.new do |p|
-  p.banner = "Usage: #{PROGRAM_NAME} [subcommand] [arguments]"
-  p.invalid_option do |flag|
-    STDERR.puts "ERROR: #{flag} is not a valid option."
-    STDERR.puts p
-    exit 1
-  end
-  p.on("--help", "Show this help") do
-    puts p
-    exit
-  end
-  p.on("keygen", "Generate key and hmac key") do
-    subcommand = :keygen
-    p.banner = "Usage: #{PROGRAM_NAME} keygen"
-  end
-  p.on("send", "Send a SPA") do
-    subcommand = :send
-    p.banner = "Usage: #{PROGRAM_NAME} send [arguments]"
-    p.on("-k KEY", "--key=KEY", "Decryption key") { |v| key = v }
-    p.on("-H KEY", "--hmac-key=KEY", "HMAC key") { |v| hmac_key = v }
-    p.on("-h HOST", "--host=HOST", "Host to connect to") { |v| host = v }
-    p.on("-p PORT", "--port=PORT", "UDP port") { |v| port = v.to_i }
-    p.on("-c PATH", "--config=PATH", "Path to config file") { |v| config_path = File.expand_path(v, home: true) }
-  end
-  p.on("connect", "Send a SPA, connect to a host/port and then pass the FD to parent") do
-    subcommand = :connect
-    p.banner = "Usage: #{PROGRAM_NAME} connect [arguments]"
-    p.on("-k KEY", "--key=KEY", "Decryption key") { |v| key = v }
-    p.on("-H KEY", "--hmac-key=KEY", "HMAC key") { |v| hmac_key = v }
-    p.on("-h HOST", "--host=HOST", "Host to connect to") { |v| host = v }
-    p.on("-p PORT", "--port=PORT", "UDP port") { |v| port = v.to_i }
-    p.on("-P PORT", "--tcp-port=PORT", "TCP port") { |v| tcp_port = v.to_i }
-    p.on("-c PATH", "--config=PATH", "Path to config file") { |v| config_path = File.expand_path(v, home: true) }
-  end
-end
-parser.parse
+      myip = if {"localhost", "127.0.0.1"}.includes? host
+               StaticArray[127u8, 0u8, 0u8, 1u8]
+             else
+               PublicIP.by_dns
+             end
+      msg = Message.new(myip)
+      data = encrypt(key, hmac_key, msg.to_slice(IO::ByteFormat::NetworkEndian))
+      udp_send(host, port, data)
+      sleep 0.02 # sleep a short while to allow the receiver to parse and execute the packet
+    end
 
-if File.exists? config_path
-  config = File.open(config_path) { |f| INI.parse(f) }
-  config.each do |_, section|
-    section.each do |k, v|
-      case k
-      when "key" then key = v
-      when "hmac-key" then hmac_key = v
-      else abort "Unrecognized config key #{k}"
-      end
+    def self.fdpass(host, port)
+      socket = TCPSocket.new(host, port)
+      FDPass.send_fd(1, socket.fd)
+    end
+
+    private def self.udp_send(host, port, data)
+      socket = UDPSocket.new
+      socket.connect host, port
+      socket.send data
+      socket.close
+    end
+
+    private def self.encrypt(key, hmac_key, data) : Bytes
+      cipher = OpenSSL::Cipher.new("aes-256-cbc")
+      cipher.encrypt
+      iv = cipher.random_iv
+      cipher.key = key
+      cipher.iv = iv
+
+      io = IO::Memory.new(32 + iv.bytesize + data.bytesize + cipher.block_size)
+      io.pos = 32
+      io.write iv
+      io.write cipher.update(data)
+      io.write cipher.final
+      mac = OpenSSL::HMAC.digest(OpenSSL::Algorithm::SHA256, hmac_key, io.to_slice[32, io.pos - 32])
+      io.rewind
+      io.write mac
+      io.to_slice
+    end
+
+    def self.keygen
+      cipher = OpenSSL::Cipher.new("aes-256-cbc")
+      STDOUT << "key = " << cipher.random_key.hexstring << "\n"
+      STDOUT << "hmac-key = " << Random::Secure.hex(32) << "\n"
     end
   end
-end
-
-begin
-  case subcommand
-  when :keygen
-    Sparoid::Client.keygen
-  when :send
-    Sparoid::Client.send(key, hmac_key, host, port)
-  when :connect
-    Sparoid::Client.send(key, hmac_key, host, port)
-    Sparoid::Client.fdpass(host, tcp_port)
-  else
-    puts "Missed subcommand"
-    puts parser
-    exit 1
-  end
-rescue ex
-  STDERR.puts "ERROR: #{ex.message}"
-  exit 1
 end

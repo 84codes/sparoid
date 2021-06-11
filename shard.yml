@@ -6,9 +6,9 @@ authors:
 
 targets:
   sparoid-server:
-    main: src/server.cr
+    main: src/server-cli.cr
   sparoid:
-    main: src/client.cr
+    main: src/client-cli.cr
 
 dependencies:
   dns:
