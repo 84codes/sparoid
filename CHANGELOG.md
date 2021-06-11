@@ -1,3 +1,8 @@
+## [1.0.4] - 2021-06-11
+
+- Move src files up one level
+- Don't allow specifying key/hmac on cmd line for client cli
+
 ## [1.0.3] - 2021-06-11
 
 - Put all classes in the Sparoid namespace/module
