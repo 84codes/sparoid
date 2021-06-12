@@ -98,7 +98,7 @@ After=network.target
 
 [Service]
 ExecStart=/usr/bin/sparoid-server --config /etc/sparoid.ini
-Restart=on-failure
+Restart=always
 ProtectSystem=full
 
 [Install]
