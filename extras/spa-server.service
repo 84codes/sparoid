@@ -6,7 +6,7 @@ After=network.target
 
 [Service]
 ExecStart=/usr/sbin/spa-server
-Restart=on-failure
+Restart=always
 RestartSec=5
 StartLimitIntervalSec=0
 User=nobody
