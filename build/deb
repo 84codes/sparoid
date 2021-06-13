@@ -13,10 +13,10 @@ shards install --production --ignore-crystal-version
 
 if [ "$architecture" != "$(dpkg --print-architecture)" ]
 then
-  build/cross-compile-with-docker src/client.cr "ubuntu:$DISTRIB_RELEASE" true
-  build/cross-compile-with-docker src/server.cr "ubuntu:$DISTRIB_RELEASE" true
-  mv bin/client bin/sparoid
-  mv bin/server bin/sparoid-server
+  build/cross-compile-with-docker src/client-cli.cr "ubuntu:$DISTRIB_RELEASE" true
+  build/cross-compile-with-docker src/server-cli.cr "ubuntu:$DISTRIB_RELEASE" true
+  mv bin/client-cli bin/sparoid
+  mv bin/server-cli bin/sparoid-server
 else
   shards build --production --release --stats
   strip bin/*
