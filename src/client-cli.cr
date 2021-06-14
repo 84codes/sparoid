@@ -71,6 +71,6 @@ begin
     exit 1
   end
 rescue ex
-  STDERR.puts "ERROR: #{ex.message}"
+  STDERR.puts "Sparoid error: #{ex.message}"
   exit 1
 end
