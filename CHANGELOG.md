@@ -1,3 +1,8 @@
+## [1.0.5] - 2021-06-14
+
+- Fix ARM deb package, compiling the correct files
+- SystemD service always restart no, not only on failure
+
 ## [1.0.4] - 2021-06-11
 
 - Move src files up one level
