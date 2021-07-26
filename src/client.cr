@@ -30,11 +30,21 @@ module Sparoid
       FDPass.send_fd(1, socket.fd)
     end
 
+    # Send to all resolved IPs for the hostname
     private def self.udp_send(host, port, data)
-      socket = UDPSocket.new
-      socket.connect host, port
-      socket.send data
-      socket.close
+      socket = Socket.udp(Socket::Family::INET)
+      begin
+        Socket::Addrinfo.udp(host, port, Socket::Family::INET).each do |addrinfo|
+          begin
+            socket.connect addrinfo
+            socket.send data
+          rescue ex
+            STDERR << "Sparoid error sending " << ex.inspect
+          end
+        end
+      ensure
+        socket.close
+      end
     end
 
     private def self.encrypt(key, hmac_key, data) : Bytes
