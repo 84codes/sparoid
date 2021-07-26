@@ -8,25 +8,28 @@ require "./public_ip"
 
 module Sparoid
   class Client
-    def self.send(key : String, hmac_key : String, host : String, port : Int32)
+    def initialize(@key : String, @hmac_key : String, @ip = PublicIP.by_dns)
+    end
+
+    def send(host : String, port : Int32)
+      self.class.send(@key, @hmac_key, host, port, @ip)
+    end
+
+    def self.send(key : String, hmac_key : String, host : String, port : Int32, ip = PublicIP.by_dns)
       key = key.hexbytes
       hmac_key = hmac_key.hexbytes
       raise ArgumentError.new("Key must be 32 bytes hex encoded") if key.bytesize != 32
       raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") if hmac_key.bytesize != 32
 
-      myip = if {"localhost", "127.0.0.1"}.includes? host
-               StaticArray[127u8, 0u8, 0u8, 1u8]
-             else
-               PublicIP.by_dns
-             end
-      msg = Message.new(myip)
+      ip = StaticArray[127u8, 0u8, 0u8, 1u8] if {"localhost", "127.0.0.1"}.includes? host
+      msg = Message.new(ip)
       data = encrypt(key, hmac_key, msg.to_slice(IO::ByteFormat::NetworkEndian))
       udp_send(host, port, data)
       sleep 0.02 # sleep a short while to allow the receiver to parse and execute the packet
     end
 
     def self.fdpass(host, port)
-      socket = TCPSocket.new(host, port)
+      socket = TCPSocket.new(host, port, dns_timeout: 5, connect_timeout: 20)
       FDPass.send_fd(1, socket.fd)
     end
 
@@ -39,7 +42,7 @@ module Sparoid
             socket.connect addrinfo
             socket.send data
           rescue ex
-            STDERR << "Sparoid error sending " << ex.inspect
+            STDERR << "Sparoid error sending " << ex.inspect << "\n"
           end
         end
       ensure

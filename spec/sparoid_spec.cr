@@ -55,4 +55,17 @@ describe Sparoid::Server do
   ensure
     s.try &.close
   end
+
+  it "client can cache IP" do
+    s = Sparoid::Server.new(KEY, HMAC_KEY, "", "")
+    s.bind(HOST, PORT)
+    spawn s.listen
+    s.@seen_nounces.size.should eq 0
+    c = Sparoid::Client.new(KEY, HMAC_KEY)
+    c.send(HOST, PORT)
+    Fiber.yield
+    s.@seen_nounces.size.should eq 1
+  ensure
+    s.try &.close
+  end
 end
