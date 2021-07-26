@@ -1,3 +1,7 @@
+## [1.0.7] - 2021-07-26
+
+- Can create an instance of Client that caches IP
+
 ## [1.0.6] - 2021-07-26
 
 - Client send packets to all resolved IPs for a hostname
