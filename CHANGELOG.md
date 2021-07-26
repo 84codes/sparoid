@@ -1,3 +1,7 @@
+## [1.0.6] - 2021-07-26
+
+- Client send packets to all resolved IPs for a hostname
+
 ## [1.0.5] - 2021-06-14
 
 - Fix ARM deb package, compiling the correct files
