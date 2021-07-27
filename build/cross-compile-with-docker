@@ -19,11 +19,6 @@ docker run --rm --platform arm64 -v "$PWD":/work -i "$image" /bin/bash << EOF
 set -eux
 apt-get update
 apt-get install -y wget clang libssl-dev libpcre3-dev libgc-dev libevent-dev zlib1g-dev
-wget https://raw.githubusercontent.com/crystal-lang/crystal/1.0.0/src/ext/sigfault.c
-cc -c -o sigfault.o sigfault.c
-ar -rcs libcrystal.a sigfault.o
-mkdir -p /usr/share/crystal/src/ext
-cp libcrystal.a /usr/share/crystal/src/ext/
 
 cd /work
 cc -Wall -O3 -c lib/fdpass/src/fdpass.c -o lib/fdpass/src/fdpass.o

@@ -16,6 +16,6 @@ dependencies:
   fdpass:
     github: 84codes/fdpass.cr
 
-crystal: 1.0.0
+crystal: 1.1.1
 
 license: MIT
