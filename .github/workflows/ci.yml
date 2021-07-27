@@ -5,7 +5,7 @@ jobs:
   lint:
     name: Spec
     runs-on: ubuntu-20.04
-    container: crystallang/crystal:1.0.0
+    container: crystallang/crystal:1.1.0
 
     steps:
       - name: Checkout
@@ -17,7 +17,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Shards install
-        run: shards install --ignore-crystal-version
+        run: shards install
 
       - name: Spec
         run: crystal spec --no-color --order random
