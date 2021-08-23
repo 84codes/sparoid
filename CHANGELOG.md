@@ -1,3 +1,7 @@
+## [1.0.8] - 2021-08-23
+
+- Client resolvs IPs before generating the message (so that the message isn't stale before sending in the case resolving took a long time)
+
 ## [1.0.7] - 2021-07-26
 
 - Can create an instance of Client that caches IP
