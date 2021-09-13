@@ -1,3 +1,7 @@
+## [1.0.9] - 2021-00-13
+
+- Support for multiple encryption and HMAC keys in the server, for key rotation
+
 ## [1.0.8] - 2021-08-23
 
 - Client resolvs IPs before generating the message (so that the message isn't stale before sending in the case resolving took a long time)
