@@ -6,7 +6,9 @@ begin
   puts "Listening: #{c.host}:#{c.port}"
   puts "Open command: #{c.open_cmd}"
   puts "Close command: #{c.close_cmd}"
-  s = Sparoid::Server.new(c.key, c.hmac_key, c.open_cmd, c.close_cmd)
+  puts "Keys: #{c.keys.size}"
+  puts "HMAC keys: #{c.hmac_keys.size}"
+  s = Sparoid::Server.new(c.keys, c.hmac_keys, c.open_cmd, c.close_cmd)
   s.bind(c.host, c.port)
   s.listen
 rescue ex

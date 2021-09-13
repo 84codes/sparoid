@@ -5,15 +5,15 @@ require "./message"
 
 module Sparoid
   class Server
-    @key : Bytes
-    @hmac_key : Bytes
+    @keys : Array(Bytes)
+    @hmac_keys : Array(Bytes)
     @closed = false
 
-    def initialize(key : String, hmac_key : String, @open_cmd : String, @close_cmd : String)
-      @key = key.hexbytes
-      @hmac_key = hmac_key.hexbytes
-      raise ArgumentError.new("Key must be 32 bytes hex encoded") if @key.bytesize != 32
-      raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") if @hmac_key.bytesize != 32
+    def initialize(keys : Enumerable(String), hmac_keys : Enumerable(String), @open_cmd : String, @close_cmd : String)
+      @keys = keys.map &.hexbytes
+      @hmac_keys = hmac_keys.map &.hexbytes
+      raise ArgumentError.new("Key must be 32 bytes hex encoded") if @keys.any? { |k| k.bytesize != 32 }
+      raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") if @hmac_keys.any? { |k| k.bytesize != 32 }
       @socket = UDPSocket.new
     end
 
@@ -92,22 +92,28 @@ module Sparoid
     private def verify_packet(data : Bytes) : Bytes
       packet_mac = data[0, 32]
       data += 32
-      mac = OpenSSL::HMAC.digest(OpenSSL::Algorithm::SHA256, @hmac_key, data)
-      raise "HMAC didn't match" unless mac == packet_mac
+      @hmac_keys.any? do |hmac_key|
+        OpenSSL::HMAC.digest(OpenSSL::Algorithm::SHA256, hmac_key, data) == packet_mac
+      end || raise "HMAC didn't match"
       data
     end
 
     private def decrypt(data : Bytes) : IO::Memory
       cipher = OpenSSL::Cipher.new("aes-256-cbc")
       cipher.decrypt
-      cipher.key = @key
       cipher.iv = data[0, cipher.iv_len]
       data += cipher.iv_len
-      io = IO::Memory.new(data.bytesize)
-      io.write cipher.update(data)
-      io.write cipher.final
-      io.rewind
-      io
+      @keys.each do |key|
+        cipher.key = key
+        io = IO::Memory.new(data.bytesize)
+        io.write cipher.update(data)
+        io.write cipher.final
+        io.rewind
+        return io
+      rescue
+        next
+      end
+      raise "Could not decrypt payload"
     end
   end
 end

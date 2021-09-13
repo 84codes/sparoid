@@ -3,8 +3,8 @@ require "ini"
 
 module Sparoid
   class Config
-    getter key = "000000000000000000000000000000000000000000000000000000000000000000"
-    getter hmac_key = "000000000000000000000000000000000000000000000000000000000000000000"
+    getter keys = Array(String).new
+    getter hmac_keys = Array(String).new
     getter host = "127.0.0.1"
     getter port = 8484
     getter open_cmd = "echo 'open %s'"
@@ -35,12 +35,14 @@ module Sparoid
 
     private def parse_config
       File.open(@config_file) do |f|
+        @keys.clear
+        @hmac_keys.clear
         INI.parse(f).each do |_, values|
           # ignore sections, assume there's only the empty
           values.each do |k, v|
             case k
-            when "key" then @key = v
-            when "hmac-key" then @hmac_key = v
+            when "key" then @keys << p v
+            when "hmac-key" then @hmac_keys << p v
             when "bind" then @host = v
             when "port" then @port = v.to_i
             when "open-cmd" then @open_cmd = v
