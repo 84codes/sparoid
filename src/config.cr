@@ -7,8 +7,8 @@ module Sparoid
     getter hmac_keys = Array(String).new
     getter host = "127.0.0.1"
     getter port = 8484
-    getter open_cmd = "echo 'open %s'"
-    getter close_cmd = "echo 'close %s'"
+    getter open_cmd = ""
+    getter close_cmd = ""
     getter config_file = "/etc/sparoid.ini"
 
     def initialize
