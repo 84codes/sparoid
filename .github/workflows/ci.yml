@@ -5,14 +5,14 @@ jobs:
   lint:
     name: Spec
     runs-on: ubuntu-20.04
-    container: crystallang/crystal:1.1.0
+    container: crystallang/crystal:1.1.1
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Crystal Ameba Linter
-        uses: crystal-ameba/github-action@v0.2.11
+        uses: crystal-ameba/github-action@v0.2.12
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
