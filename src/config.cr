@@ -41,8 +41,8 @@ module Sparoid
           # ignore sections, assume there's only the empty
           values.each do |k, v|
             case k
-            when "key" then @keys << p v
-            when "hmac-key" then @hmac_keys << p v
+            when "key" then @keys << v
+            when "hmac-key" then @hmac_keys << v
             when "bind" then @host = v
             when "port" then @port = v.to_i
             when "open-cmd" then @open_cmd = v
