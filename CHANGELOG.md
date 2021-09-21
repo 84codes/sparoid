@@ -1,4 +1,9 @@
-## [1.0.9] - 2021-00-13
+## [1.0.10] - 2021-09-21
+
+- No default open/close commands
+- Dont print keys on startup
+
+## [1.0.9] - 2021-09-13
 
 - Support for multiple encryption and HMAC keys in the server, for key rotation
 
