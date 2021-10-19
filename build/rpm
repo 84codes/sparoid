@@ -1,0 +1,65 @@
+#!/bin/sh
+set -eux
+pkg_version=$1
+pkg_revision=${2:-1}
+rpmbuild=$HOME/rpmbuild
+
+rpmdev-setuptree
+mv sparoid "sparoid-$pkg_version"
+tar czf "$rpmbuild/SOURCES/sparoid-$pkg_version.tar.gz" "sparoid-$pkg_version"
+
+cat > "$rpmbuild/SPECS/sparoid.spec" << EOF
+Name:    sparoid
+Version: $pkg_version
+Release: $pkg_revision%{?dist}
+Summary: Singe Packet Authentication server/client
+
+License: MIT
+%{?systemd_requires}
+BuildRequires: systemd-rpm-macros
+URL: https://github.com/84codes/sparoid
+Source0: sparoid-$pkg_version.tar.gz
+
+%description
+Single Packet Authentiction, will open the firewall for an IP if an
+encrypted and verified UDP package arrives from that IP.
+
+%prep
+%setup -q
+
+%build
+shards build --production --release
+
+%install
+install -D -m 0755 bin/%{name} %{buildroot}/%{_bindir}/%{name}
+install -D -m 0755 bin/%{name}-server %{buildroot}/%{_sbindir}/%{name}-server
+install -D -m 0644 extras/%{name}-server.service %{buildroot}/%{_unitdir}/%{name}-server.service
+install -D -m 0644 extras/%{name}.ini %{buildroot}/%{_sysconfdir}/%{name}.ini
+
+%post
+%systemd_post %{name}.service
+
+%preun
+%systemd_preun %{name}.service
+
+%postun
+%systemd_postun_with_restart %{name}.service
+
+%files
+%doc README.md CHANGELOG.md
+%license LICENSE
+%{_bindir}/%{name}
+%{_sbindir}/%{name}-server
+%{_unitdir}/%{name}-server.service
+%config(noreplace) %{_sysconfdir}/%{name}.ini
+
+%changelog
+* $(LANG=en-us date +"%a %b %d %Y") 84codes <contact@84codes.com> $pkg_version-$pkg_revision
+- See https://github.com/84codes/sparoid/blob/main/CHANGELOG.md
+EOF
+
+rpmlint "$rpmbuild/SPECS/sparoid.spec"
+rpmbuild -bb "$rpmbuild/SPECS/sparoid.spec"
+rpmlint "$rpmbuild/RPMS/"
+mkdir -p builds
+mv $rpmbuild/RPMS/**/* builds/
