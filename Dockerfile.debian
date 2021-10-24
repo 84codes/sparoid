@@ -1,0 +1,13 @@
+FROM 84codes/crystal:1.2.1-debian-latest as builder
+WORKDIR /tmp
+COPY shard.yml shard.lock ./
+RUN shards install --production
+COPY src/ src/
+RUN shards build --release --production
+RUN strip bin/*
+
+FROM debian:latest
+RUN apt-get update && apt-get install -y iptables nftables && \
+    rm -rf /var/cache/apt/* /var/lib/apt/lists/* /var/cache/debconf/*
+COPY --from=builder /tmp/bin/* /usr/local/bin/
+ENTRYPOINT ["/usr/local/bin/sparoid-server"]

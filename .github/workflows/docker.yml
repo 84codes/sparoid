@@ -13,27 +13,51 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v3
         with:
           images: 84codes/sparoid
-          flavor: |
-            latest=true
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
+
       - name: Login to DockerHub
         uses: docker/login-action@v1 
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push
+
+      - name: Build and push alpine
         uses: docker/build-push-action@v2
         with:
-          context: .
           platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            84codes/sparoid:latest-alpine
+            84codes/sparoid:latest
+          labels: ${{ steps.meta.outputs.labels }}
+          push: true
+
+      - name: Build and push fedora
+        uses: docker/build-push-action@v2
+        with:
+          file: Dockerfile.fedora
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            84codes/sparoid:latest-fedora
+          labels: ${{ steps.meta.outputs.labels }}
+          push: true
+
+      - name: Build and push debian
+        uses: docker/build-push-action@v2
+        with:
+          file: Dockerfile.debian
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            84codes/sparoid:latest-debian
           labels: ${{ steps.meta.outputs.labels }}
           push: true

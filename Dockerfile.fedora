@@ -1,0 +1,12 @@
+FROM 84codes/crystal:1.2.1-fedora-latest as builder
+WORKDIR /tmp
+COPY shard.yml shard.lock ./
+RUN shards install --production
+COPY src/ src/
+RUN shards build --release --production
+RUN strip bin/*
+
+FROM fedora:latest
+RUN dnf install -y --nodocs iptables nftables && dnf clean
+COPY --from=builder /tmp/bin/* /usr/local/bin/
+ENTRYPOINT ["/usr/local/bin/sparoid-server"]
