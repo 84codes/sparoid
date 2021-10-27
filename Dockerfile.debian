@@ -7,7 +7,11 @@ RUN shards build --release --production
 RUN strip bin/*
 
 FROM debian:latest
-RUN apt-get update && apt-get install -y iptables nftables && \
+RUN apt-get update && apt-get install -y libgc1 libevent-2.1-7 nftables && \
     rm -rf /var/cache/apt/* /var/lib/apt/lists/* /var/cache/debconf/*
+RUN echo '#!/usr/sbin/nft -f'            >  /etc/nftables.conf && \
+    echo 'flush ruleset'                 >> /etc/nftables.conf && \
+    echo 'include "/etc/nftables/*.nft"' >> /etc/nftables.conf && \
+    mkdir /etc/nftables
 COPY --from=builder /tmp/bin/* /usr/local/bin/
-ENTRYPOINT ["/usr/local/bin/sparoid-server"]
+CMD ["/bin/sh", "-c", "/usr/sbin/nft -f /etc/nftables.conf && exec /usr/local/bin/sparoid-server"]

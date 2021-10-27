@@ -7,6 +7,10 @@ RUN shards build --release --production
 RUN strip bin/*
 
 FROM fedora:latest
-RUN dnf install -y --nodocs iptables nftables && dnf clean
+RUN dnf install -y --nodocs libgc libevent nftables && dnf clean all
+RUN echo '#!/usr/sbin/nft -f'            >  /etc/nftables.conf && \
+    echo 'flush ruleset'                 >> /etc/nftables.conf && \
+    echo 'include "/etc/nftables/*.nft"' >> /etc/nftables.conf && \
+    rm -rf /etc/nftables && mkdir /etc/nftables
 COPY --from=builder /tmp/bin/* /usr/local/bin/
-ENTRYPOINT ["/usr/local/bin/sparoid-server"]
+CMD ["/bin/sh", "-c", "/usr/sbin/nft -f /etc/nftables.conf && exec /usr/local/bin/sparoid-server"]
