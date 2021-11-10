@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [amd64, arm64]
-        os: [ubuntu-18.04, ubuntu-20.04]
+        os: [ubuntu-18.04, ubuntu-20.04, debian-10, debian-11]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -36,7 +36,7 @@ jobs:
           file: Dockerfile.deb
           platforms: linux/${{ matrix.arch }}
           build-args: |
-            build_image=84codes/crystal:1.2.0-${{ matrix.os }}
+            build_image=84codes/crystal:1.2.1-${{ matrix.os }}
             pkg_version=${{ env.PKG_VERSION }}
           outputs: builds
 
