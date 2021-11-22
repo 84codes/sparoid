@@ -48,9 +48,9 @@ if File.exists? config_path
   config.each do |_, section|
     section.each do |k, v|
       case k
-      when "key" then key = v
+      when "key"      then key = v
       when "hmac-key" then hmac_key = v
-      else abort "Unrecognized config key #{k}"
+      else                 abort "Unrecognized config key #{k}"
       end
     end
   end

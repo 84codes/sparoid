@@ -1,9 +1,9 @@
 require "./spec_helper"
 
-KEYS = Array(String).new(2) { Random::Secure.hex(32) }
+KEYS      = Array(String).new(2) { Random::Secure.hex(32) }
 HMAC_KEYS = Array(String).new(2) { Random::Secure.hex(32) }
-HOST = "127.0.0.1"
-PORT = 8484
+HOST      = "127.0.0.1"
+PORT      = 8484
 
 describe Sparoid::Server do
   it "works" do
