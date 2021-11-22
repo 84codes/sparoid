@@ -28,7 +28,8 @@ encrypted and verified UDP package arrives from that IP.
 %setup -q
 
 %build
-shards build --production --release
+shards build --production --release sparoid-server
+shards build --production --release -Dgc_none sparoid
 
 %install
 install -D -m 0755 bin/%{name} %{buildroot}/%{_bindir}/%{name}
