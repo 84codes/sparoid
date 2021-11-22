@@ -5,7 +5,7 @@ jobs:
   spec:
     name: Spec
     runs-on: ubuntu-latest
-    container: 84codes/crystal:1.2.0-alpine-latest
+    container: 84codes/crystal:latest-alpine
 
     steps:
       - name: Checkout
@@ -16,6 +16,17 @@ jobs:
 
       - name: Spec
         run: crystal spec --no-color --order random
+
+  format:
+    name: Formatting
+    runs-on: ubuntu-latest
+    container: 84codes/crystal:latest-alpine
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Format check
+        run: crystal tool format --check
 
   lint:
     name: Lint
