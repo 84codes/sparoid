@@ -37,7 +37,8 @@ module Sparoid
       ip = StaticArray(UInt8, 4).new(0_u8)
       i = 0
       str.split(".") do |part|
-        ip[i += 1] = part.to_u8
+        ip[i] = part.to_u8
+        i += 1
       end
       ip
     end
