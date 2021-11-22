@@ -40,8 +40,7 @@ module Sparoid
       begin
         host_addresses.each do |addrinfo|
           begin
-            socket.connect addrinfo
-            socket.send data
+            socket.send data, to: addrinfo.ip_address
           rescue ex
             STDERR << "Sparoid error sending " << ex.inspect << "\n"
           end
