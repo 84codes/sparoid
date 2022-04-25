@@ -28,7 +28,7 @@ jobs:
     container: 84codes/crystal:latest-alpine
     steps:
       - name: Install make
-        run: apk add --no-cache make
+        run: apk add --no-cache make yaml-dev
       - name: Checkout
         uses: actions/checkout@v2
       - name: Shards install
