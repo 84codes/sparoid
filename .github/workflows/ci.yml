@@ -25,6 +25,7 @@ jobs:
   lint:
     name: Lint/Ameba
     runs-on: ubuntu-latest
+    container: 84codes/crystal:latest-alpine
     steps:
       - name: Checkout
         uses: actions/checkout@v2
