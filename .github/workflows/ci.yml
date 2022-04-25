@@ -27,6 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     container: 84codes/crystal:latest-alpine
     steps:
+      - name: Install make
+        run: apt-get update && apt-get install -y make
       - name: Checkout
         uses: actions/checkout@v2
       - name: Shards install
