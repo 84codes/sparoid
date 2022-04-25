@@ -1,4 +1,4 @@
-FROM 84codes/crystal:1.2.2-alpine-latest as builder
+FROM 84codes/crystal:1.4.1-alpine-latest as builder
 WORKDIR /tmp
 COPY shard.yml shard.lock ./
 RUN shards install --production

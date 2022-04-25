@@ -6,17 +6,13 @@ jobs:
     name: Spec
     runs-on: ubuntu-latest
     container: 84codes/crystal:latest-alpine
-
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-
       - name: Shards install
-        run: shards install
-
+        run: shards install --production
       - name: Spec
         run: crystal spec --no-color --order random
-
   format:
     name: Formatting
     runs-on: ubuntu-latest
@@ -24,18 +20,118 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-
       - name: Format check
         run: crystal tool format --check
-
   lint:
-    name: Lint
+    name: Lint/Ameba
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Shards install
+        run: shards install
+      - name: Spec
+        run: bin/ameba --no-color
+  docker:
+    name: Docker container
+    needs: [spec, format, lint]
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get version
+        run: echo "VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
+      - uses: actions/checkout@v2
+      - uses: docker/metadata-action@v3
+        id: meta
+        with:
+          images: 84codes/sparoid
+      - uses: docker/setup-qemu-action@v1
+      - uses: docker/setup-buildx-action@v1
+      - uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push container
+        uses: docker/build-push-action@v2
+        with:
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            84codes/sparoid:latest-alpine
+            84codes/sparoid:latest
+            84codes/sparoid:${{ env.VERSION }}
+          labels: ${{ steps.meta.outputs.labels }}
+          push: true
+  deb:
+    name: Deb package
+    needs: [spec, format, lint]
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+        os: [ubuntu-18.04, ubuntu-20.04, debian-10, debian-11]
+    steps:
+      - name: Get version
+        run: echo "PKG_VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
+      - uses: actions/checkout@v2
+      - uses: docker/setup-qemu-action@v1
+      - uses: docker/setup-buildx-action@v1
+      - uses: docker/build-push-action@v2
+        name: Build
+        with:
+          file: Dockerfile.deb
+          platforms: linux/${{ matrix.arch }}
+          build-args: |
+            build_image=84codes/crystal:1.4.1-${{ matrix.os }}
+            pkg_version=${{ env.PKG_VERSION }}
+          outputs: builds
+      - name: Upload to PackageCloud
+        run: |
+          set -eux
+          curl -fsSO -u "${{ secrets.packagecloud_token }}:" https://packagecloud.io/api/v1/distributions.json
+          PKG_FILE=$(find builds -name "*.deb" | head -1)
+          ID=$(echo $PKG_FILE | cut -d/ -f2)
+          VERSION_CODENAME=$(echo $PKG_FILE | cut -d/ -f3)
+          DIST_ID=$(jq ".deb[] | select(.index_name == \"${ID}\").versions[] | select(.index_name == \"${VERSION_CODENAME}\").id" distributions.json)
+          curl -fsS -u "${{ secrets.packagecloud_token }}:" -XPOST \
+            -F "package[distro_version_id]=${DIST_ID}" \
+            -F "package[package_file]=@${PKG_FILE}" \
+            https://packagecloud.io/api/v1/repos/cloudamqp/sparoid/packages.json
 
-      - name: Crystal Ameba Linter
-        uses: crystal-ameba/github-action@v0.2.12
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  rpm:
+    name: RPM package
+    needs: [spec, format, lint]
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+        os: [fedora-35]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get version
+        run: echo "PKG_VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
+      - uses: actions/checkout@v2
+      - uses: docker/setup-qemu-action@v1
+      - uses: docker/setup-buildx-action@v1
+      - uses: docker/build-push-action@v2
+        with:
+          file: Dockerfile.rpm
+          platforms: linux/${{ matrix.arch }}
+          build-args: |
+            build_image=84codes/crystal:1.4.1-${{ matrix.os }}
+            pkg_version=${{ env.PKG_VERSION }}
+          outputs: builds
+      - name: Upload to PackageCloud
+        run: |
+          set -eux
+          curl -fsSO -u "${{ secrets.packagecloud_token }}:" https://packagecloud.io/api/v1/distributions.json
+          ID=$(echo ${{ matrix.os }} | cut -d- -f1)
+          VR=$(echo ${{ matrix.os }} | cut -d- -f2)
+          DIST_ID=$(jq ".rpm[] | select(.index_name == \"${ID}\").versions[] | select(.index_name == \"${VR}\").id" distributions.json)
+          find builds -name "*.rpm" | xargs -i \
+            curl -fsS -u "${{ secrets.packagecloud_token }}:" -XPOST \
+                 -F "package[distro_version_id]=${DIST_ID}" \
+                 -F "package[package_file]=@{}" \
+                 https://packagecloud.io/api/v1/repos/cloudamqp/sparoid/packages.json

@@ -1,5 +1,9 @@
 version: 2.0
 shards:
+  ameba:
+    git: https://github.com/crystal-ameba/ameba.git
+    version: 1.0.0
+
   dns:
     git: https://gitlab.com/jgillich/crystal-dns.git
     version: 0.1.1
