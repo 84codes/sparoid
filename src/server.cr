@@ -34,7 +34,7 @@ module Sparoid
           verify_ts(msg.ts)
           ip_str = ip_to_s(msg.ip)
           verify_nounce(msg.nounce)
-          puts "#{client_addr} packet accepted"
+          puts "#{client_addr} packet accepted #{ip_str != client_addr ? "ip=#{ip_str}" : ""}"
           spawn open_then_close(ip_str)
         rescue ex
           puts "#{client_addr} ERROR: #{ex.message}"
