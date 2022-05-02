@@ -1,3 +1,7 @@
+## [1.0.11] - 2022-05-02
+
+- Don't check if source IP and IP and packet matches, use IP in packet
+
 ## [1.0.10] - 2021-09-21
 
 - No default open/close commands

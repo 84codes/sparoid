@@ -4,7 +4,7 @@ Hide any server behind a deny all firewall, but open up the firewall for a singl
 
 Inspiration comes from [fwknop](http://www.cipherdyne.org/fwknop/docs/fwknop-tutorial.html), but is implemented in [Crystal](https://www.crystal-lang.com).
 
-The server listens on an UDP port, when it receives a message it tries to verify it (HMAC), decrypt it (AES-256-CBC), then verify the nounce (that it haven't been seen before, reply attack), that the timestamp is within 5s, and that the IP in the message matches the source IP.
+The server listens on an UDP port, when it receives a message it tries to verify it (HMAC), decrypt it (AES-256-CBC), then verify the nounce (that it haven't been seen before, reply attack), that the timestamp is within 5s. The IP that the packet arrives from and the IP that's in the packet (and the FW will be opened for), doesn't have to match, so a third party server can open the FW for another client.
 
 If all checks passes the firewall is opened for the IP in the message. After 15s the port is closed again.
 
