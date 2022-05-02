@@ -1,22 +1,18 @@
-#!/bin/bash
-set -euo pipefail
+#!/bin/sh
 
-trap "cd '$PWD'; rm -rf debroot debian-binary control.tar.gz data.tar.gz" EXIT
+pkg_version=$(bin/sparoid-server --version)
+pkg_revision=${1:-1}
+architecture=$(dpkg --print-architecture)
 
-pkg_version=${1:-$(git describe --tags | cut -c2- )}
-pkg_revision=${2:-1}
-architecture=${3:-$(dpkg --print-architecture)}
-
-shards build --production --release --no-debug sparoid-server
-shards build --production --release --no-debug -Dgc_none sparoid
-strip bin/*
-
+rm -rf debroot debian-binary control.tar.gz data.tar.gz
 mkdir debroot
-cd debroot
+cd debroot || exit 1
 
 mkdir -p usr/bin usr/share/doc/sparoid lib/systemd/system/ etc usr/share/man/man1
 cp ../bin/* usr/bin/
 cp ../README.md usr/share/doc/sparoid/README
+cp ../LICENSE usr/share/doc/sparoid/LICENSE
+cp ../CHANGELOG.md usr/share/doc/sparoid/CHANGELOG
 
 cat > etc/sparoid.ini << EOF
 bind      = 127.0.0.1
@@ -104,9 +100,8 @@ Homepage: https://github.com/84codes/sparoid
 Section: net
 Priority: optional
 Architecture: $architecture
-Depends: $(ldd ../bin/* | awk '/=>/ {print $3}' | xargs dpkg -S | awk -F: "/$architecture/ { print \$1 }" | sort -u | paste -sd,)
 Installed-Size: $(du -ks usr/ | cut -f 1)
-Maintainer: CloudAMQP Team <contact@84codes.com>
+Maintainer: 84codes Team <contact@84codes.com>
 Description: Single Packet Authorization
  An UDP server that on the arrival of a encrypted UDP packet execute a command with the source IP as argument. The package includes both the client and the server.
 EOF
@@ -131,12 +126,7 @@ chmod +x DEBIAN/prerm
 
 cd ..
 
-. /etc/os-release
-debdir=builds/$ID/$VERSION_CODENAME
-debname=sparoid_$pkg_version-${pkg_revision}_$architecture.deb
-mkdir -p "$debdir"
-
 echo 2.0 > debian-binary
 tar c --directory debroot/DEBIAN . | gzip -9 > control.tar.gz
 tar c --directory debroot --exclude=./DEBIAN . | gzip -9 > data.tar.gz
-ar rc "$debdir/$debname" debian-binary control.tar.gz data.tar.gz
+ar rc "sparoid_$pkg_version-${pkg_revision}_$architecture.deb" debian-binary control.tar.gz data.tar.gz
