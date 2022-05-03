@@ -1,3 +1,7 @@
+## [1.0.12] - 2022-05-03
+
+- Correct dependencies in deb package
+
 ## [1.0.11] - 2022-05-02
 
 - Don't check if source IP and IP and packet matches, use IP in packet
