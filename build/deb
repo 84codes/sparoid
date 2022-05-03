@@ -104,7 +104,7 @@ Homepage: https://github.com/84codes/sparoid
 Section: net
 Priority: optional
 Architecture: $architecture
-Depends: $(ldd ../bin/* | awk '/=>/ {print $3}' | xargs dpkg -S | awk -F: "/$architecture/ { print \$1 }" | sort -u | paste -sd,)
+Depends: $(ldd ../bin/* | awk '/=>/ {print $1}' | xargs dpkg -S | awk -F: "/$architecture/ { print \$1 }" | sort -u | paste -sd,)
 Installed-Size: $(du -ks usr/ | cut -f 1)
 Maintainer: CloudAMQP Team <contact@84codes.com>
 Description: Single Packet Authorization
