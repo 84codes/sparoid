@@ -7,10 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     container: 84codes/crystal:latest-alpine
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Shards install
-        run: shards install --production
+      - uses: actions/checkout@v3
+      - run: shards install --production
       - name: Spec
         run: crystal spec --no-color --order random
   format:
@@ -18,8 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     container: 84codes/crystal:latest-alpine
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Format check
         run: crystal tool format --check
   lint:
@@ -27,13 +24,11 @@ jobs:
     runs-on: ubuntu-latest
     container: 84codes/crystal:latest-alpine
     steps:
-      - name: Install make
+      - name: Install deps
         run: apk add --no-cache make yaml-dev
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Shards install
-        run: shards install
-      - name: Spec
+      - uses: actions/checkout@v3
+      - run: shards install
+      - name: ameba
         run: bin/ameba --no-color
   docker:
     name: Docker container
@@ -64,14 +59,14 @@ jobs:
             84codes/sparoid:${{ env.VERSION }}
           labels: ${{ steps.meta.outputs.labels }}
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
   deb:
     name: Deb package
     needs: [spec, format, lint, docker]
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     steps:
-      - name: Get version
-        run: echo "PKG_VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
       - uses: actions/checkout@v2
       - uses: docker/setup-qemu-action@v1
       - uses: docker/setup-buildx-action@v1
