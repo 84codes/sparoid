@@ -74,12 +74,20 @@ jobs:
         name: Build deb
         with:
           platforms: linux/amd64,linux/arm64
-          build-args: |
-            deb_revision=${{ github.run_number }}
           target: deb
           outputs: output
-      - name: Upload to PackageCloud
-        run: find output -name "*.deb" -exec curl -fsSu "${{ secrets.packagecloud_token }}:" -F "package[distro_version_id]=35" -F "package[package_file]=@{}" -XPOST https://packagecloud.io/api/v1/repos/84codes/crystal/packages.json \;
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Upload to PackageCloud any/any
+        run: find output -name "*.deb" -exec curl -fsSu "${{ secrets.packagecloud_token }}:" -F "package[distro_version_id]=35" -F "package[package_file]=@{}" -XPOST https://packagecloud.io/api/v1/repos/cloudamqp/sparoid/packages.json \;
+      - name: Upload to PackageCloud ubuntu/bionic
+        run: find output -name "*.deb" -exec curl -fsSu "${{ secrets.packagecloud_token }}:" -F "package[distro_version_id]=190" -F "package[package_file]=@{}" -XPOST https://packagecloud.io/api/v1/repos/cloudamqp/sparoid/packages.json \;
+      - name: Upload to PackageCloud ubuntu/focal
+        run: find output -name "*.deb" -exec curl -fsSu "${{ secrets.packagecloud_token }}:" -F "package[distro_version_id]=210" -F "package[package_file]=@{}" -XPOST https://packagecloud.io/api/v1/repos/cloudamqp/sparoid/packages.json \;
+      - name: Upload to PackageCloud debian/buster
+        run: find output -name "*.deb" -exec curl -fsSu "${{ secrets.packagecloud_token }}:" -F "package[distro_version_id]=150" -F "package[package_file]=@{}" -XPOST https://packagecloud.io/api/v1/repos/cloudamqp/sparoid/packages.json \;
+      - name: Upload to PackageCloud debian/bullseye
+        run: find output -name "*.deb" -exec curl -fsSu "${{ secrets.packagecloud_token }}:" -F "package[distro_version_id]=207" -F "package[package_file]=@{}" -XPOST https://packagecloud.io/api/v1/repos/cloudamqp/sparoid/packages.json \;
 
   rpm:
     name: RPM package
