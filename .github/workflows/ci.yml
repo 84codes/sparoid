@@ -73,7 +73,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [amd64, arm64]
-        os: [ubuntu-18.04, ubuntu-20.04, debian-10, debian-11]
+        os: [ubuntu-18.04, ubuntu-20.04, ubuntu-22.04, debian-10, debian-11]
     steps:
       - name: Get version
         run: echo "PKG_VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
