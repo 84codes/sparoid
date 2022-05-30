@@ -1,3 +1,7 @@
+## [1.0.13] - 2022-05-31
+
+- Cache the public IP to disk for 60s in the client
+
 ## [1.0.12] - 2022-05-03
 
 - Correct dependencies in deb package
