@@ -6,11 +6,11 @@ bin:
 lib:
 	shards install --production
 
-bin/sparoid: | lib bin
-	crystal build -o $@ --release --no-debug -Dgc_none src/client-cli.cr
+bin/sparoid: src/client-cli.cr src/message.cr src/public_ip.cr | lib bin
+	crystal build -o $@ --release --no-debug -Dgc_none $<
 
-bin/sparoid-server: | lib bin
-	crystal build -o $@ --release --no-debug src/server-cli.cr
+bin/sparoid-server: src/server-cli.cr src/message.cr src/config.cr | lib bin
+	crystal build -o $@ --release --no-debug $<
 
 clean:
 	rm -rf bin
