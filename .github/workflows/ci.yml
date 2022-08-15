@@ -110,7 +110,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [amd64, arm64]
-        os: [fedora-35]
+        os: [fedora-35, fedora-36]
     runs-on: ubuntu-latest
     steps:
       - name: Get version
