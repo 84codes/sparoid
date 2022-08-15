@@ -8,6 +8,8 @@ The server listens on an UDP port, when it receives a message it tries to verify
 
 If all checks passes the firewall is opened for the IP in the message. After 15s the port is closed again.
 
+Direct nftables integration is also available, set the `nftables-cmd` and sparoid will interact with it directly without having to spawn a new process, which saves on resources.
+
 ## Installation
 
 Ubuntu:
@@ -32,8 +34,7 @@ bind = 0.0.0.0
 port = 8484
 key = $SPAROID_KEY
 hmac-key = $SPAROID_HMAC_KEY
-open-cmd = nft add element inet filter sparoid { %s }
-close-cmd =
+nftables-cmd = add element inet filter sparoid { %s }
 EOF
 
 cat > /etc/nftables.conf << EOF
@@ -78,15 +79,6 @@ systemctl restart nftables.service sparoid.service
 ```
 
 With iptables:
-
-```sh
-iptables -A INPUT -p tcp --dport 22 -m state --state NEW -j DROP # reject new connections to 22 by default
-bin/sparoid-server -k $key -H $hmac_key \
-  --open-cmd "iptables -I INPUT -p tcp --dport 22 -s %s -j ACCEPT" \
-  --close-cmd "iptables -D INPUT -p tcp --dport 22 -s %s -j ACCEPT"
-```
-
-Or with a config:
 
 ```sh
 iptables -A INPUT -p tcp --dport 22 -j DROP # block connections to port 22
