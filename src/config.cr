@@ -11,6 +11,7 @@ module Sparoid
     getter open_cmd = ""
     getter close_cmd = ""
     getter config_file = "/etc/sparoid.ini"
+    getter nftables_cmd = ""
 
     def initialize
       parse_options
@@ -46,12 +47,13 @@ module Sparoid
           # ignore sections, assume there's only the empty
           values.each do |k, v|
             case k
-            when "key"       then @keys << v
-            when "hmac-key"  then @hmac_keys << v
-            when "bind"      then @host = v
-            when "port"      then @port = v.to_i
-            when "open-cmd"  then @open_cmd = v
-            when "close-cmd" then @close_cmd = v
+            when "key"          then @keys << v
+            when "hmac-key"     then @hmac_keys << v
+            when "bind"         then @host = v
+            when "port"         then @port = v.to_i
+            when "open-cmd"     then @open_cmd = v
+            when "close-cmd"    then @close_cmd = v
+            when "nftables-cmd" then @nftables_cmd = v
             end
           end
         end

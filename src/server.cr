@@ -9,7 +9,7 @@ module Sparoid
     @hmac_keys : Array(Bytes)
     @closed = false
 
-    def initialize(keys : Enumerable(String), hmac_keys : Enumerable(String), @open_cmd : String, @close_cmd : String)
+    def initialize(keys : Enumerable(String), hmac_keys : Enumerable(String), @on_accept : Proc(String, Nil))
       @keys = keys.map &.hexbytes
       @hmac_keys = hmac_keys.map &.hexbytes
       raise ArgumentError.new("Key must be 32 bytes hex encoded") if @keys.any? { |k| k.bytesize != 32 }
@@ -35,7 +35,7 @@ module Sparoid
           ip_str = ip_to_s(msg.ip)
           verify_nounce(msg.nounce)
           puts "#{client_addr} packet accepted #{ip_str != client_addr ? "ip=#{ip_str}" : ""}"
-          spawn open_then_close(ip_str)
+          @on_accept.call(ip_str)
         rescue ex
           puts "#{client_addr} ERROR: #{ex.message}"
         end
@@ -47,13 +47,6 @@ module Sparoid
     def close
       @closed = true
       @socket.close
-    end
-
-    private def open_then_close(ip_str)
-      system sprintf(@open_cmd, ip_str)
-      return if @close_cmd.empty?
-      sleep 15
-      system sprintf(@close_cmd, ip_str)
     end
 
     MAX_NOUNCES = 65536 # 65536 * 16 = 1MB

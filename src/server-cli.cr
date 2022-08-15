@@ -1,14 +1,32 @@
 require "./server"
 require "./config"
+require "./nftables"
 
 begin
   c = Sparoid::Config.new
   puts "Listening: #{c.host}:#{c.port}"
-  puts "Open command: #{c.open_cmd}"
-  puts "Close command: #{c.close_cmd}"
   puts "Keys: #{c.keys.size}"
   puts "HMAC keys: #{c.hmac_keys.size}"
-  s = Sparoid::Server.new(c.keys, c.hmac_keys, c.open_cmd, c.close_cmd)
+  if c.nftables_cmd
+    puts "nftables command: #{c.nftables_cmd}"
+    nft = Nftables.new
+    on_accept = ->(ip_str : String) {
+      nft.run_cmd sprintf(c.nftables_cmd, ip_str)
+    }
+  else
+    puts "Open command: #{c.open_cmd}"
+    puts "Close command: #{c.close_cmd}"
+    on_accept = ->(ip_str : String) : Nil {
+      spawn do
+        system sprintf(c.open_cmd, ip_str)
+        unless c.close_cmd.empty?
+          sleep 15
+          system sprintf(c.close_cmd, ip_str)
+        end
+      end
+    }
+  end
+  s = Sparoid::Server.new(c.keys, c.hmac_keys, on_accept)
   s.bind(c.host, c.port)
   s.listen
 rescue ex
