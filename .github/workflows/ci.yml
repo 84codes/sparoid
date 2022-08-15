@@ -86,7 +86,7 @@ jobs:
           file: Dockerfile.deb
           platforms: linux/${{ matrix.arch }}
           build-args: |
-            build_image=84codes/crystal:1.4.1-${{ matrix.os }}
+            build_image=84codes/crystal:1.5.0-${{ matrix.os }}
             pkg_version=${{ env.PKG_VERSION }}
           outputs: builds
       - name: Upload to PackageCloud
@@ -123,7 +123,7 @@ jobs:
           file: Dockerfile.rpm
           platforms: linux/${{ matrix.arch }}
           build-args: |
-            build_image=84codes/crystal:1.4.1-${{ matrix.os }}
+            build_image=84codes/crystal:1.5.0-${{ matrix.os }}
             pkg_version=${{ env.PKG_VERSION }}
           outputs: builds
       - name: Upload to PackageCloud
