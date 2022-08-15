@@ -2,6 +2,7 @@
 struct NftCtx
 end
 
+# https://git.netfilter.org/nftables/plain/doc/libnftables.adoc
 # https://git.netfilter.org/nftables/tree/include/nftables/libnftables.h
 @[Link("nftables")]
 lib LibNftables
