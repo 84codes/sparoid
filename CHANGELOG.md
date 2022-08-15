@@ -1,3 +1,7 @@
+## [1.1.1] - 2022-08-15
+
+- bug fix: restore open/close-cmd support
+
 ## [1.1.0] - 2022-08-15
 
 - Direct nftables support
