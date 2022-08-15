@@ -8,7 +8,9 @@ pkg_revision=${2:-1}
 architecture=${3:-$(dpkg --print-architecture)}
 
 build_flags=""
-apt-get update && apt-get install -y libnftables-dev || build_flags="-Dwithout_nftables"
+apt-get update
+apt-get install -y binutils
+apt-get install -y libnftables-dev || build_flags="-Dwithout_nftables"
 
 shards build --production --release --no-debug $build_flags sparoid-server
 shards build --production --release --no-debug -Dgc_none sparoid
