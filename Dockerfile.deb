@@ -8,8 +8,7 @@ COPY src src
 COPY build build
 
 # Build deb package
-ARG pkg_version
-RUN build/deb $pkg_version
+RUN build/deb
 
 # Copy the deb package to a scratch image, that then can be exported
 FROM scratch AS export-stage

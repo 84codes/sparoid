@@ -13,8 +13,7 @@ COPY extras extras
 # Build package
 WORKDIR /tmp
 COPY build/rpm .
-ARG pkg_version
-RUN ./rpm $pkg_version
+RUN ./rpm
 
 # Copy the deb package to a scratch image, that then can be exported
 FROM scratch AS export-stage

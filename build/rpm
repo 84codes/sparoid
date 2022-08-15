@@ -1,7 +1,9 @@
 #!/bin/sh
 set -eux
-pkg_version=$(echo $1 | awk -F- '{print $1}')
-pkg_revision=$(echo $1 | awk -F- '{print ($2 ? $2 : 1) }')
+
+version=${1:-$(git describe --tags | cut -c2- )}
+pkg_version=$(echo "$version" | awk -F- '{print $1}')
+pkg_revision=$(echo "$version" | awk -F- '{print ($2 ? $2 : 1) }')
 rpmbuild=$HOME/rpmbuild
 
 rpmdev-setuptree
