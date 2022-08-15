@@ -3,7 +3,7 @@ set -euo pipefail
 
 trap "cd '$PWD'; rm -rf debroot debian-binary control.tar.gz data.tar.gz" EXIT
 
-pkg_version=${1:-$(git describe --tags | cut -c2- )}
+pkg_version=${1:-$(shards version)}
 pkg_revision=${2:-1}
 architecture=${3:-$(dpkg --print-architecture)}
 
