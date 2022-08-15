@@ -7,7 +7,6 @@ module Sparoid
   class Server
     @keys : Array(Bytes)
     @hmac_keys : Array(Bytes)
-    @closed = false
 
     def initialize(keys : Enumerable(String), hmac_keys : Enumerable(String), @on_accept : Proc(String, Nil))
       @keys = keys.map &.hexbytes
@@ -41,11 +40,10 @@ module Sparoid
         end
       end
     rescue ex : IO::Error
-      raise ex unless @closed
+      raise ex unless @socket.closed?
     end
 
     def close
-      @closed = true
       @socket.close
     end
 
