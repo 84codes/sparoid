@@ -1,3 +1,7 @@
+## [1.1.2] - 2022-08-15
+
+- build option -Dwithout_nftables, that fallsback to nft binary for nftables-cmd (for ubuntu 18.04)
+
 ## [1.1.1] - 2022-08-15
 
 - bug fix: restore open/close-cmd support
