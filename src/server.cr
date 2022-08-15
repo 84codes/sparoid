@@ -31,8 +31,8 @@ module Sparoid
           plain = decrypt(encrypted)
           msg = Message.from_io(plain, IO::ByteFormat::NetworkEndian)
           verify_ts(msg.ts)
-          ip_str = ip_to_s(msg.ip)
           verify_nounce(msg.nounce)
+          ip_str = ip_to_s(msg.ip)
           puts "#{client_addr} packet accepted #{ip_str != client_addr ? "ip=#{ip_str}" : ""}"
           @on_accept.call(ip_str)
         rescue ex
