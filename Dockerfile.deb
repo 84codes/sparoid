@@ -1,9 +1,5 @@
 ARG build_image
 FROM $build_image AS build-stage
-
-# Install build deps
-RUN apt-get update && apt-get install -y libnftables-dev
-
 WORKDIR /build
 
 # Copy all files

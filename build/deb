@@ -7,7 +7,8 @@ pkg_version=${1:-$(git describe --tags | cut -c2- )}
 pkg_revision=${2:-1}
 architecture=${3:-$(dpkg --print-architecture)}
 
-shards build --production --release --no-debug sparoid-server
+apt-get update && apt-get install -y libnftables-dev || build_flags="-Dwithout_nftables"
+shards build --production --release --no-debug $build_flags sparoid-server
 shards build --production --release --no-debug -Dgc_none sparoid
 strip bin/*
 
