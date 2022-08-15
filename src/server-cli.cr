@@ -7,7 +7,7 @@ begin
   puts "Listening: #{c.host}:#{c.port}"
   puts "Keys: #{c.keys.size}"
   puts "HMAC keys: #{c.hmac_keys.size}"
-  if c.nftables_cmd
+  if c.nftables_cmd.bytesize > 0
     puts "nftables command: #{c.nftables_cmd}"
     nft = Nftables.new
     on_accept = ->(ip_str : String) {
