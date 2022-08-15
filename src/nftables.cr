@@ -37,5 +37,3 @@ class Nftables
 
   class Error < Exception; end
 end
-
-Nftables.new.run_cmd("list ruleset")
