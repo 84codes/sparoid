@@ -1,3 +1,8 @@
+## [1.1.0] - 2022-08-15
+
+- Direct nftables support
+- Show version with `sparoid --version`
+
 ## [1.0.13] - 2022-05-31
 
 - Cache the public IP to disk for 60s in the client
