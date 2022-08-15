@@ -106,7 +106,7 @@ Priority: optional
 Architecture: $architecture
 Depends: $(ldd ../bin/* | awk '/=>/ {print $1}' | xargs dpkg -S | awk -F: "/$architecture/ { print \$1 }" | sort -u | paste -sd,)
 Installed-Size: $(du -ks usr/ | cut -f 1)
-Maintainer: CloudAMQP Team <contact@84codes.com>
+Maintainer: 84codes <contact@84codes.com>
 Description: Single Packet Authorization
  An UDP server that on the arrival of a encrypted UDP packet execute a command with the source IP as argument. The package includes both the client and the server.
 EOF
