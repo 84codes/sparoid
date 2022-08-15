@@ -1,5 +1,6 @@
 require "option_parser"
 require "ini"
+require "./version"
 
 module Sparoid
   class Config
@@ -22,6 +23,10 @@ module Sparoid
         parser.on("-c CONFIG", "--config=CONFIG", "Path to config file (default: /etc/sparoid.ini)") { |v| @config_file = v }
         parser.on("-h", "--help", "Show this help") do
           puts parser
+          exit
+        end
+        parser.on("--version", "Show version") do
+          puts Sparoid::VERSION
           exit
         end
 

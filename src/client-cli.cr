@@ -1,6 +1,7 @@
 require "ini"
 require "option_parser"
 require "./client"
+require "./version"
 
 subcommand = :none
 key = ENV.fetch("SPAROID_KEY", "")
@@ -19,6 +20,10 @@ parser = OptionParser.new do |p|
   end
   p.on("--help", "Show this help") do
     puts p
+    exit
+  end
+  p.on("--version", "Show version") do
+    puts Sparoid::VERSION
     exit
   end
   p.on("keygen", "Generate key and hmac key") do
