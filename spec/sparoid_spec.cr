@@ -7,19 +7,23 @@ PORT      = 8484
 
 describe Sparoid::Server do
   it "works" do
-    s = Sparoid::Server.new(KEYS, HMAC_KEYS, "", "")
+    last_ip = nil
+    cb = ->(ip : String) { last_ip = ip }
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb)
     s.bind(HOST, PORT)
     spawn s.listen
     s.@seen_nounces.size.should eq 0
     Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, HOST, PORT)
     Fiber.yield
     s.@seen_nounces.size.should eq 1
+    last_ip.should eq "127.0.0.1"
   ensure
     s.try &.close
   end
 
   it "fails invalid packet lengths" do
-    s = Sparoid::Server.new(KEYS, HMAC_KEYS, "", "")
+    cb = ->(ip : String) { ip.should be_nil }
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb)
     s.bind(HOST, PORT)
     spawn s.listen
     socket = UDPSocket.new
@@ -33,7 +37,8 @@ describe Sparoid::Server do
   end
 
   it "fails invalid key" do
-    s = Sparoid::Server.new(KEYS, HMAC_KEYS, "", "")
+    cb = ->(ip : String) { ip.should be_nil }
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb)
     s.bind(HOST, PORT)
     spawn s.listen
     invalid_key = Random::Secure.hex(32)
@@ -45,7 +50,8 @@ describe Sparoid::Server do
   end
 
   it "fails invalid hmac key" do
-    s = Sparoid::Server.new(KEYS, HMAC_KEYS, "", "")
+    cb = ->(ip : String) { ip.should be_nil }
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb)
     s.bind(HOST, PORT)
     spawn s.listen
     invalid_hmac_key = Random::Secure.hex(32)
@@ -57,7 +63,9 @@ describe Sparoid::Server do
   end
 
   it "client can cache IP" do
-    s = Sparoid::Server.new(KEYS, HMAC_KEYS, "", "")
+    accepted = 0
+    cb = ->(_ip : String) { accepted += 1 }
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb)
     s.bind(HOST, PORT)
     spawn s.listen
     s.@seen_nounces.size.should eq 0
@@ -65,12 +73,15 @@ describe Sparoid::Server do
     c.send(HOST, PORT)
     Fiber.yield
     s.@seen_nounces.size.should eq 1
+    accepted.should eq 1
   ensure
     s.try &.close
   end
 
   it "works with two keys" do
-    s = Sparoid::Server.new(KEYS, HMAC_KEYS, "", "")
+    accepted = 0
+    cb = ->(_ip : String) { accepted += 1 }
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb)
     s.bind(HOST, PORT)
     spawn s.listen
     s.@seen_nounces.size.should eq 0
@@ -78,6 +89,7 @@ describe Sparoid::Server do
     Sparoid::Client.send(KEYS.last, HMAC_KEYS.last, HOST, PORT)
     Fiber.yield
     s.@seen_nounces.size.should eq 2
+    accepted.should eq 2
   ensure
     s.try &.close
   end
