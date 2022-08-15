@@ -13,6 +13,8 @@ lib LibNftables
   fun nft_run_cmd_from_filename(ctx : NftCtx*, buf : LibC::Char*) : LibC::Int
 end
 
+# Class to interact with nftables
+# All output is printed to stdout/stderr
 class Nftables
   def initialize
     @nft = LibNftables.nft_ctx_new(LibNftables::NFT_CTX_DEFAULT)
@@ -22,18 +24,20 @@ class Nftables
     LibNftables.nft_ctx_free(@nft)
   end
 
+  # Execute a nft command, eg. 'list ruleset'
   def run_cmd(cmd : String) : Nil
     buf = Bytes.new(cmd.bytesize + 1) # null terminated string
     buf.copy_from(cmd.to_slice)
     LibNftables.nft_run_cmd_from_buffer(@nft, buf).zero? ||
-      raise Error.new("nftables command could not be executed")
+      raise Error.new("nftables command '#{cmd}' failed")
   end
 
+  # Execute a nft script in a file
   def run_file(file : String) : Nil
     buf = Bytes.new(file.bytesize + 1) # null terminated string
     buf.copy_from(file.to_slice)
     LibNftables.nft_run_cmd_from_filename(@nft, buf).zero? ||
-      raise Error.new("nftables file could not be executed")
+      raise Error.new("nftables file '#{file}' failed")
   end
 
   class Error < Exception; end
