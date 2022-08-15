@@ -30,7 +30,7 @@ module Sparoid
     end
 
     def self.fdpass(host, port)
-      socket = TCPSocket.new(host, port, dns_timeout: 5, connect_timeout: 20)
+      socket = TCPSocket.new(host, port, dns_timeout: 30, connect_timeout: 60)
       FDPass.send_fd(1, socket.fd)
     end
 
