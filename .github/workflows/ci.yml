@@ -78,7 +78,7 @@ jobs:
       - uses: docker/build-push-action@v3
         name: Build
         with:
-          file: Dockerfile.deb
+          file: deb.dockerfile
           platforms: linux/${{ matrix.arch }}
           build-args: |
             build_image=84codes/crystal:1.5.0-${{ matrix.os }}
@@ -112,7 +112,7 @@ jobs:
       - uses: docker/setup-buildx-action@v2
       - uses: docker/build-push-action@v3
         with:
-          file: Dockerfile.rpm
+          file: rpm.dockerfile
           platforms: linux/${{ matrix.arch }}
           build-args: |
             build_image=84codes/crystal:1.5.0-${{ matrix.os }}
@@ -146,5 +146,5 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/v')
         with:
-          files: *.tar.gz
+          files: '*.tar.gz'
           fail_on_unmatched_files: true
