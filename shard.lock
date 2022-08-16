@@ -10,5 +10,5 @@ shards:
 
   fdpass:
     git: https://github.com/84codes/fdpass.cr.git
-    version: 0.1.0+git.commit.d3c5f8093b282f598053b6af00bc75cb1c9e3ca0
+    version: 0.1.1+git.commit.a0e4330860662488e9393d63da8f5c16aae7c84c
 
