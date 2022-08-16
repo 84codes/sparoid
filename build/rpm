@@ -63,6 +63,6 @@ EOF
 
 rpmlint "$rpmbuild/SPECS/sparoid.spec"
 rpmbuild -bb "$rpmbuild/SPECS/sparoid.spec"
-rpmlint "$rpmbuild/RPMS/"
+#rpmlint "$rpmbuild/RPMS/"
 mkdir -p builds
 mv $rpmbuild/RPMS/**/* builds/
