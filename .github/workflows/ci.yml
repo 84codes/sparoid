@@ -132,3 +132,21 @@ jobs:
                  -F "package[distro_version_id]=${DIST_ID}" \
                  -F "package[package_file]=@{}" \
                  https://packagecloud.io/api/v1/repos/cloudamqp/sparoid/packages.json
+
+  tar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/setup-qemu-action@v2
+      - uses: docker/setup-buildx-action@v2
+      - name: Build tar package
+        uses: docker/build-push-action@v3
+        with:
+          file: tar.dockerfile
+          outputs: .
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          files: *.tar.gz
+          fail_on_unmatched_files: true
