@@ -1,5 +1,9 @@
 name: CI
-on: [push]
+on:
+  pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
   spec:
@@ -83,6 +87,11 @@ jobs:
           build-args: |
             build_image=84codes/crystal:1.5.0-${{ matrix.os }}
           outputs: builds
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: debs
+          path: builds/
       - name: Upload to PackageCloud
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         run: |
@@ -117,6 +126,11 @@ jobs:
           build-args: |
             build_image=84codes/crystal:1.5.0-${{ matrix.os }}
           outputs: builds
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: rpms
+          path: builds/
       - name: Upload to PackageCloud
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         run: |
@@ -143,6 +157,11 @@ jobs:
         with:
           file: tar.dockerfile
           outputs: .
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: tar
+          path: ./*.tar.gz
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/v')
