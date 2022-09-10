@@ -55,7 +55,6 @@ if File.exists? config_path
       case k
       when "key"      then key = v
       when "hmac-key" then hmac_key = v
-      else                 abort "Unrecognized config key #{k}"
       end
     end
   end
