@@ -94,6 +94,9 @@ After=network.target
 ExecStart=/usr/bin/sparoid-server --config /etc/sparoid.ini
 Restart=always
 ProtectSystem=full
+MemoryAccounting=true
+MemoryHigh=4M
+MemoryMax=5M
 
 [Install]
 WantedBy=multi-user.target
