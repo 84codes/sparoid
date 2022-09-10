@@ -37,6 +37,8 @@ module Sparoid
           @on_accept.call(ip_str)
         rescue ex
           puts "#{client_addr} ERROR: #{ex.message}"
+        ensure
+          GC.collect
         end
       end
     rescue ex : IO::Error
