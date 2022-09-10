@@ -84,18 +84,21 @@ module Sparoid
       data
     end
 
+    @cipher = OpenSSL::Cipher.new("aes-256-cbc")
+    @io = IO::Memory.new(32)
+
     private def decrypt(data : Bytes) : IO::Memory
-      cipher = OpenSSL::Cipher.new("aes-256-cbc")
-      cipher.decrypt
-      cipher.iv = data[0, cipher.iv_len]
-      data += cipher.iv_len
+      @cipher.reset
+      @cipher.decrypt
+      @cipher.iv = data[0, @cipher.iv_len]
+      data += @cipher.iv_len
       @keys.each do |key|
-        cipher.key = key
-        io = IO::Memory.new(data.bytesize)
-        io.write cipher.update(data)
-        io.write cipher.final
-        io.rewind
-        return io
+        @cipher.key = key
+        @io.clear
+        @io.write @cipher.update(data)
+        @io.write @cipher.final
+        @io.rewind
+        return @io
       rescue
         next
       end
