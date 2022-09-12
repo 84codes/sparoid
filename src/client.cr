@@ -16,17 +16,20 @@ module Sparoid
     end
 
     def self.send(key : String, hmac_key : String, host : String, port : Int32, ip = PublicIP.by_dns)
+      ip = StaticArray[127u8, 0u8, 0u8, 1u8] if {"localhost", "127.0.0.1"}.includes? host
+      package = generate_package(key, hmac_key, ip)
+      udp_send(host, port, package)
+      sleep 0.02 # sleep a short while to allow the receiver to parse and execute the packet
+    end
+
+    def self.generate_package(key, hmac_key, ip) : Bytes
       key = key.hexbytes
       hmac_key = hmac_key.hexbytes
       raise ArgumentError.new("Key must be 32 bytes hex encoded") if key.bytesize != 32
       raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") if hmac_key.bytesize != 32
 
-      host_addresses = Socket::Addrinfo.udp(host, port, Socket::Family::INET)
-      ip = StaticArray[127u8, 0u8, 0u8, 1u8] if {"localhost", "127.0.0.1"}.includes? host
       msg = Message.new(ip)
-      data = encrypt(key, hmac_key, msg.to_slice(IO::ByteFormat::NetworkEndian))
-      udp_send(host_addresses, port, data)
-      sleep 0.02 # sleep a short while to allow the receiver to parse and execute the packet
+      encrypt(key, hmac_key, msg.to_slice(IO::ByteFormat::NetworkEndian))
     end
 
     def self.fdpass(host, port)
@@ -35,7 +38,8 @@ module Sparoid
     end
 
     # Send to all resolved IPs for the hostname
-    private def self.udp_send(host_addresses, port, data)
+    private def self.udp_send(host, port, data)
+      host_addresses = Socket::Addrinfo.udp(host, port, Socket::Family::INET)
       socket = Socket.udp(Socket::Family::INET)
       begin
         host_addresses.each do |addrinfo|

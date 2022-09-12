@@ -26,15 +26,8 @@ module Sparoid
       loop do
         count, client_addr = socket.receive(packet)
         begin
-          raise "Expected UDP packet to be 96 bytes, got #{count} bytes" if count != 96
-          encrypted = verify_packet(packet)
-          plain = decrypt(encrypted)
-          msg = Message.from_io(plain, IO::ByteFormat::NetworkEndian)
-          verify_ts(msg.ts)
-          verify_nounce(msg.nounce)
-          ip_str = ip_to_s(msg.ip)
+          process_packet(packet, count, client_addr)
           puts "#{client_addr} packet accepted #{ip_str != client_addr ? "ip=#{ip_str}" : ""}"
-          @on_accept.call(ip_str)
         rescue ex
           puts "#{client_addr} ERROR: #{ex.message}"
         ensure
@@ -43,6 +36,17 @@ module Sparoid
       end
     rescue ex : IO::Error
       raise ex unless @socket.closed?
+    end
+
+    def process_packet(packet : Bytes, count : Int, client_addr)
+      raise "Expected UDP packet to be 96 bytes, got #{count} bytes" if count != 96
+      encrypted = verify_packet(packet)
+      plain = decrypt(encrypted)
+      msg = Message.from_io(plain, IO::ByteFormat::NetworkEndian)
+      verify_ts(msg.ts)
+      verify_nounce(msg.nounce)
+      ip_str = ip_to_s(msg.ip)
+      @on_accept.call(ip_str)
     end
 
     def close
