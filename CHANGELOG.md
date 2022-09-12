@@ -1,3 +1,9 @@
+## [1.1.3] - 2022-09-12
+
+- Decrease number of allocations when processing packets
+- SystemD service limits memory to 5MB
+- Allow unknown keys in config file for client so that the same config can be used for server and client
+
 ## [1.1.2] - 2022-08-15
 
 - build option -Dwithout_nftables, that fallsback to nft binary for nftables-cmd (for ubuntu 18.04)
