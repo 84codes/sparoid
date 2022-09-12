@@ -30,8 +30,6 @@ module Sparoid
           puts "#{client_addr} packet accepted #{ip_str != client_addr ? "ip=#{ip_str}" : ""}"
         rescue ex
           puts "#{client_addr} ERROR: #{ex.message}"
-        ensure
-          GC.collect
         end
       end
     rescue ex : IO::Error
