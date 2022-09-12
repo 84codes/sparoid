@@ -126,7 +126,7 @@ EOF
 cat > DEBIAN/postinst << EOF
 #!/bin/sh -e
 deb-systemd-helper enable sparoid-server.service
-deb-systemd-invoke start sparoid-server.service
+deb-systemd-invoke restart sparoid-server.service
 EOF
 chmod +x DEBIAN/postinst
 
