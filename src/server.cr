@@ -59,7 +59,7 @@ module Sparoid
       if @seen_nounces.includes? nounce
         raise "reply-attack, nounce seen before"
       end
-      @seen_nounces.shift if @seen_nounces.size == MAX_NOUNCES
+      @seen_nounces.shift if @seen_nounces.size >= MAX_NOUNCES
       @seen_nounces.push nounce
     end
 
