@@ -83,7 +83,7 @@ module Sparoid
       packet_mac = data[0, 32]
       data += 32
       @hmac_keys.any? do |hmac_key|
-        OpenSSL::HMAC.digest(OpenSSL::Algorithm::SHA256, hmac_key, data) == packet_mac
+        hmac_digest(hmac_key, data) == packet_mac
       end || raise "HMAC didn't match"
       data
     end
@@ -107,6 +107,17 @@ module Sparoid
         next
       end
       raise "Could not decrypt payload"
+    end
+
+    SHA256_EVP = OpenSSL::Algorithm::SHA256.to_evp
+    @hmac_buffer = Bytes.new(32)
+
+    private def hmac_digest(key, data) : Bytes
+      key_slice = key.to_slice
+      data_slice = data.to_slice
+      LibCrypto.hmac(SHA256_EVP, key_slice, key_slice.size, data_slice, data_slice.size, @hmac_buffer, out buffer_len)
+      buffer_len == 32 || raise "Unexpected hmac digest length #{buffer_len}"
+      @hmac_buffer
     end
   end
 end
