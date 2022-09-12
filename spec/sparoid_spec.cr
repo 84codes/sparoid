@@ -93,4 +93,18 @@ describe Sparoid::Server do
   ensure
     s.try &.close
   end
+
+  it "client can send another IP" do
+    last_ip = nil
+    cb = ->(ip : String) { last_ip = ip }
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb)
+    s.bind("0.0.0.0", PORT)
+    spawn s.listen
+    Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "0.0.0.0", PORT, StaticArray[1u8, 1u8, 1u8, 1u8])
+    Fiber.yield
+    s.@seen_nounces.size.should eq 1
+    last_ip.should eq "1.1.1.1"
+  ensure
+    s.try &.close
+  end
 end
