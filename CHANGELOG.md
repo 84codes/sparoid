@@ -1,3 +1,7 @@
+## [1.1.4] - 2022-09-13
+
+- Increase MemoryMax to 12M
+
 ## [1.1.3] - 2022-09-12
 
 - Decrease number of allocations when processing packets
