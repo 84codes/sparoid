@@ -10,7 +10,7 @@ Restart=always
 ProtectSystem=strict
 MemoryAccounting=true
 MemoryHigh=4M
-MemoryMax=5M
+MemoryMax=12M
 
 [Install]
 WantedBy=multi-user.target
