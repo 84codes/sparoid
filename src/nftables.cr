@@ -2,12 +2,12 @@
   # Class to interact with nftables
   # Not linked to libnftables, but calls out to the `nft` binary
   class Nftables
-    def run_cmd(cmd : String) : Nil
+    def self.run_cmd(cmd : String) : Nil
       status = Process.run("nft", {cmd}, output: Process::Redirect::Inherit, error: Process::Redirect::Inherit)
       status.success? || raise Error.new("nftables command '#{cmd}' failed")
     end
 
-    def run_file(file : String) : Nil
+    def self.run_file(file : String) : Nil
       status = Process.run("nft", {"-f", file}, output: Process::Redirect::Inherit, error: Process::Redirect::Inherit)
       status.success? || raise Error.new("nftables file '#{file}' failed")
     end
@@ -18,28 +18,26 @@
   # Class to interact with nftables
   # All output is printed to stdout/stderr
   class Nftables
-    def initialize
-      @nft = LibNftables.nft_ctx_new(LibNftables::NFT_CTX_DEFAULT)
-    end
-
-    def finalize
-      LibNftables.nft_ctx_free(@nft)
-    end
-
     # Execute a nft command, eg. 'list ruleset'
-    def run_cmd(cmd : String) : Nil
+    def self.run_cmd(cmd : String) : Nil
+      nft = LibNftables.nft_ctx_new(LibNftables::NFT_CTX_DEFAULT)
       buf = Bytes.new(cmd.bytesize + 1) # null terminated string
       buf.copy_from(cmd.to_slice)
-      LibNftables.nft_run_cmd_from_buffer(@nft, buf).zero? ||
+      LibNftables.nft_run_cmd_from_buffer(nft, buf).zero? ||
         raise Error.new("nftables command '#{cmd}' failed")
+    ensure
+      LibNftables.nft_ctx_free(nft) if nft
     end
 
     # Execute a nft script in a file
-    def run_file(file : String) : Nil
+    def self.run_file(file : String) : Nil
+      nft = LibNftables.nft_ctx_new(LibNftables::NFT_CTX_DEFAULT)
       buf = Bytes.new(file.bytesize + 1) # null terminated string
       buf.copy_from(file.to_slice)
-      LibNftables.nft_run_cmd_from_filename(@nft, buf).zero? ||
+      LibNftables.nft_run_cmd_from_filename(nft, buf).zero? ||
         raise Error.new("nftables file '#{file}' failed")
+    ensure
+      LibNftables.nft_ctx_free(nft) if nft
     end
 
     class Error < Exception; end
