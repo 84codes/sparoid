@@ -1,3 +1,7 @@
+## [1.1.7] - 2022-09-14
+
+- Save a few allocations
+
 ## [1.1.6] - 2022-09-14
 
 - Create/free a nftables context for each request
