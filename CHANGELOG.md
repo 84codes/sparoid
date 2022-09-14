@@ -1,3 +1,7 @@
+## [1.1.9] - 2022-09-14
+
+- Revert to one nft at a time becasue some versions of nft -i also leaks memory
+
 ## [1.1.8] - 2022-09-14
 
 - Because libnftable seems to leak memory in some versions use nft -i
