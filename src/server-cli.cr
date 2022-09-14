@@ -9,9 +9,8 @@ begin
   puts "HMAC keys: #{c.hmac_keys.size}"
   if c.nftables_cmd.bytesize > 0
     puts "nftables command: #{c.nftables_cmd}"
-    nft = Nftables.new
     on_accept = ->(ip_str : String) {
-      nft.run_cmd sprintf(c.nftables_cmd, ip_str)
+      Nftables.run_cmd sprintf(c.nftables_cmd, ip_str)
     }
   else
     puts "Open command: #{c.open_cmd}"

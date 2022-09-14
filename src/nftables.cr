@@ -2,12 +2,12 @@
   # Class to interact with nftables
   # Not linked to libnftables, but calls out to the `nft` binary
   class Nftables
-    def run_cmd(cmd : String) : Nil
+    def self.run_cmd(cmd : String) : Nil
       status = Process.run("nft", {cmd}, output: Process::Redirect::Inherit, error: Process::Redirect::Inherit)
       status.success? || raise Error.new("nftables command '#{cmd}' failed")
     end
 
-    def run_file(file : String) : Nil
+    def self.run_file(file : String) : Nil
       status = Process.run("nft", {"-f", file}, output: Process::Redirect::Inherit, error: Process::Redirect::Inherit)
       status.success? || raise Error.new("nftables file '#{file}' failed")
     end
@@ -19,26 +19,22 @@
   # All output is printed to stdout/stderr
   class Nftables
     # Execute a nft command, eg. 'list ruleset'
-    def run_cmd(cmd : String) : Nil
-      buf = Bytes.new(cmd.bytesize + 1) # null terminated string
-      buf.copy_from(cmd.to_slice)
+    def self.run_cmd(cmd : String) : Nil
       with_ctx do |ctx|
-        LibNftables.nft_run_cmd_from_buffer(ctx, buf).zero? ||
+        LibNftables.nft_run_cmd_from_buffer(ctx, cmd).zero? ||
           raise Error.new("nftables command '#{cmd}' failed")
       end
     end
 
     # Execute a nft script in a file
-    def run_file(file : String) : Nil
-      buf = Bytes.new(file.bytesize + 1) # null terminated string
-      buf.copy_from(file.to_slice)
+    def self.run_file(file : String) : Nil
       with_ctx do |ctx|
-        LibNftables.nft_run_cmd_from_filename(ctx, buf).zero? ||
+        LibNftables.nft_run_cmd_from_filename(ctx, file).zero? ||
           raise Error.new("nftables file '#{file}' failed")
       end
     end
 
-    private def with_ctx
+    private def self.with_ctx
       ctx = LibNftables.nft_ctx_new(LibNftables::NFT_CTX_DEFAULT)
       yield ctx
     ensure
