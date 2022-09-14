@@ -1,3 +1,7 @@
+## [1.1.6] - 2022-09-14
+
+- Create/free a nftables context for each request
+
 ## [1.1.5] - 2022-09-13
 
 - Increase MemoryMax to 32M
