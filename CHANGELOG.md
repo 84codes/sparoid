@@ -1,3 +1,7 @@
+## [1.1.8] - 2022-09-14
+
+- Because libnftable seems to leak memory in some versions use nft -i
+
 ## [1.1.7] - 2022-09-14
 
 - Save a few allocations
