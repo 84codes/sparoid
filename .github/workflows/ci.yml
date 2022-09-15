@@ -87,7 +87,7 @@ jobs:
           file: deb.dockerfile
           platforms: linux/${{ matrix.arch }}
           build-args: |
-            build_image=84codes/crystal:1.5.0-${{ matrix.os }}
+            build_image=84codes/crystal:latest-${{ matrix.os }}
           outputs: builds
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -126,7 +126,7 @@ jobs:
           file: rpm.dockerfile
           platforms: linux/${{ matrix.arch }}
           build-args: |
-            build_image=84codes/crystal:1.5.0-${{ matrix.os }}
+            build_image=84codes/crystal:latest-${{ matrix.os }}
           outputs: builds
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
