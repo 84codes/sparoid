@@ -1,3 +1,7 @@
+## [1.1.10] - 2022-09-15
+
+- Bundle static libnftables in debian binaries, doesn't seem to leak memory and works also in ubuntu 18.04
+
 ## [1.1.9] - 2022-09-14
 
 - Revert to one nft at a time becasue some versions of nft -i also leaks memory
