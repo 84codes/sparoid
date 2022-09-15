@@ -2,7 +2,7 @@ ARG build_image
 FROM $build_image AS build-stage
 
 # Install deps
-RUN dnf install -y rpmdevtools rpmlint git systemd-rpm-macros nftables-devel
+RUN dnf install -y rpmdevtools rpmlint git systemd-rpm-macros nftables-devel libmnl-devel libnftnl-devel
 
 # Copy all files
 WORKDIR /tmp/sparoid
