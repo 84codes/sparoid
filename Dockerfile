@@ -1,5 +1,5 @@
-FROM 84codes/crystal:1.5.0-alpine-latest as builder
-RUN apk add --no-cache nftables-dev
+FROM 84codes/crystal:latest-alpine as builder
+RUN apk add --no-cache nftables-dev libnftnl-dev libmnl-dev
 WORKDIR /tmp
 COPY shard.yml shard.lock ./
 RUN shards install --production
