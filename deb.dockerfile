@@ -18,7 +18,7 @@ RUN curl -sL https://www.netfilter.org/pub/libnftnl/libnftnl-1.2.3.tar.bz2 | tar
 # build static nftables
 WORKDIR /tmp/nftables
 RUN curl -sL https://www.netfilter.org/pub/nftables/nftables-1.0.5.tar.bz2 | tar jx --strip-components=1 && \
-  ./configure --enable-static --disable-shared --with-mini-gmp --without-cli --prefix=/usr && \
+  ./configure --enable-static --disable-shared --with-mini-gmp --without-cli --prefix=/usr --disable-python && \
   make -j CFLAGS="-fPIE -O3" && \
   make install
 
