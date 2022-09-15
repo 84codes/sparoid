@@ -65,6 +65,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           push: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
   deb:
     name: Deb package
     needs: [spec, format, lint]
@@ -83,6 +85,8 @@ jobs:
         with:
           file: deb.dockerfile
           platforms: linux/${{ matrix.arch }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
             build_image=84codes/crystal:latest-${{ matrix.os }}
           outputs: builds
@@ -122,6 +126,8 @@ jobs:
         with:
           file: rpm.dockerfile
           platforms: linux/${{ matrix.arch }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
             build_image=84codes/crystal:latest-${{ matrix.os }}
           outputs: builds
@@ -155,6 +161,8 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           file: tar.dockerfile
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           outputs: .
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
