@@ -47,11 +47,15 @@ module Sparoid
           # ignore sections, assume there's only the empty
           values.each do |k, v|
             case k
-            when "key"          then @keys << v
-            when "hmac-key"     then @hmac_keys << v
-            when "bind"         then @host = v
-            when "port"         then @port = v.to_i
-            when "open-cmd"     then @open_cmd = v
+            when "key"      then @keys << v
+            when "hmac-key" then @hmac_keys << v
+            when "bind"     then @host = v
+            when "port"     then @port = v.to_i
+            when "open-cmd"
+              @open_cmd = v
+              if m = v.match(/^nft (.*)/)
+                @nftables_cmd = m[1]
+              end
             when "close-cmd"    then @close_cmd = v
             when "nftables-cmd" then @nftables_cmd = v
             end
