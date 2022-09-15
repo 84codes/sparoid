@@ -42,7 +42,6 @@ jobs:
   docker:
     name: Docker container
     needs: [spec, format, lint]
-    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     steps:
       - name: Get version
@@ -67,7 +66,7 @@ jobs:
             84codes/sparoid:latest
             84codes/sparoid:${{ env.VERSION }}
           labels: ${{ steps.meta.outputs.labels }}
-          push: true
+          push: ${{ startsWith(github.ref, 'refs/tags/v') }}
   deb:
     name: Deb package
     needs: [spec, format, lint]
