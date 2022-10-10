@@ -67,8 +67,8 @@ begin
   when :send
     Sparoid::Client.send(key, hmac_key, host, port)
   when :connect
-    Sparoid::Client.send(key, hmac_key, host, port)
-    Sparoid::Client.fdpass(host, tcp_port)
+    ips = Sparoid::Client.send(key, hmac_key, host, port)
+    Sparoid::Client.fdpass(ips, tcp_port)
   else
     puts "Missed subcommand"
     puts parser

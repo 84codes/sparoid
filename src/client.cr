@@ -15,11 +15,12 @@ module Sparoid
       self.class.send(@key, @hmac_key, host, port, @ip)
     end
 
-    def self.send(key : String, hmac_key : String, host : String, port : Int32, ip = PublicIP.by_dns)
+    def self.send(key : String, hmac_key : String, host : String, port : Int32, ip = PublicIP.by_dns) : Array(String)
       ip = StaticArray[127u8, 0u8, 0u8, 1u8] if {"localhost", "127.0.0.1"}.includes? host
       package = generate_package(key, hmac_key, ip)
-      udp_send(host, port, package)
-      sleep 0.02 # sleep a short while to allow the receiver to parse and execute the packet
+      udp_send(host, port, package).tap do
+        sleep 0.02 # sleep a short while to allow the receiver to parse and execute the packet
+      end
     end
 
     def self.generate_package(key, hmac_key, ip) : Bytes
@@ -32,26 +33,37 @@ module Sparoid
       encrypt(key, hmac_key, msg.to_slice(IO::ByteFormat::NetworkEndian))
     end
 
-    def self.fdpass(host, port)
-      socket = TCPSocket.new(host, port, dns_timeout: 30, connect_timeout: 60)
-      FDPass.send_fd(1, socket.fd)
+    def self.fdpass(ips, port) : NoReturn
+      ch = Channel(Nil).new
+      ips.each do |ip|
+        spawn do
+          socket = TCPSocket.new
+          socket.connect(Socket::IPAddress.new(ip, port), timeout: 10)
+          FDPass.send_fd(1, socket.fd)
+          # exit as soon as possible so no other fiber also succefully connects
+          exit 0
+        rescue
+          ch.send(nil)
+        end
+      end
+      ips.size.times { ch.receive }
+      exit 1 # only if all connects fails
     end
 
     # Send to all resolved IPs for the hostname
-    private def self.udp_send(host, port, data)
+    private def self.udp_send(host, port, data) : Array(String)
       host_addresses = Socket::Addrinfo.udp(host, port, Socket::Family::INET)
       socket = Socket.udp(Socket::Family::INET)
-      begin
-        host_addresses.each do |addrinfo|
-          begin
-            socket.send data, to: addrinfo.ip_address
-          rescue ex
-            STDERR << "Sparoid error sending " << ex.inspect << "\n"
-          end
+      host_addresses.each do |addrinfo|
+        begin
+          socket.send data, to: addrinfo.ip_address
+        rescue ex
+          STDERR << "Sparoid error sending " << ex.inspect << "\n"
         end
-      ensure
-        socket.close
       end
+      host_addresses.map &.ip_address.address
+    ensure
+      socket.close if socket
     end
 
     private def self.encrypt(key, hmac_key, data) : Bytes
