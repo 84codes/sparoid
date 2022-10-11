@@ -53,7 +53,7 @@ module Sparoid
     # Send to all resolved IPs for the hostname
     private def self.udp_send(host, port, data) : Array(String)
       host_addresses = Socket::Addrinfo.udp(host, port, Socket::Family::INET)
-      socket = Socket.udp(Socket::Family::INET)
+      socket = Socket.udp(Socket::Family::INET, blocking: true)
       host_addresses.each do |addrinfo|
         begin
           socket.send data, to: addrinfo.ip_address
