@@ -5,9 +5,28 @@ require "openssl/hmac"
 require "fdpass"
 require "./message"
 require "./public_ip"
+require "ini"
 
 module Sparoid
   class Client
+    def self.new(config_path = "~/.sparoid.ini")
+      key = ENV.fetch("SPAROID_KEY", "")
+      hmac_key = ENV.fetch("SPAROID_HMAC_KEY", "")
+      config_path = File.expand_path config_path, home: true
+      if File.exists? config_path
+        config = File.open(config_path) { |f| INI.parse(f) }
+        config.each do |_, section|
+          section.each do |k, v|
+            case k
+            when "key"      then key = v
+            when "hmac-key" then hmac_key = v
+            end
+          end
+        end
+      end
+      self.new(key, hmac_key)
+    end
+
     def initialize(@key : String, @hmac_key : String, @ip = PublicIP.by_dns)
     end
 
