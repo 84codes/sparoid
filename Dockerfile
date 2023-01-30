@@ -7,6 +7,6 @@ COPY src/ src/
 RUN shards build --release --production --no-debug && strip bin/*
 
 FROM alpine:latest
-RUN apk add --no-cache libgcc libevent pcre libssl3 nftables
+RUN apk add --no-cache libgcc libevent pcre libssl1.1 nftables
 COPY --from=builder /tmp/bin/* /usr/bin/
 ENTRYPOINT ["/usr/bin/sparoid-server"]
