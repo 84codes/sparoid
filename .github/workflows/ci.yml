@@ -116,7 +116,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [amd64, arm64]
-        os: [fedora-35, fedora-36]
+        os: [fedora-37, fedora-36]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
