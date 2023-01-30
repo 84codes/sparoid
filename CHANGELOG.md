@@ -1,3 +1,9 @@
+## Unreleased
+
+- Client improvement: If hostname resolves to multiple IPs fdpass will connect to them in parallel and exit when the first succeeds
+- Client improvement: Sparoid::Client.new can parse INI files
+- Client improvement: Block/wait for UDP packets to be sent
+
 ## [1.1.10] - 2022-09-15
 
 - Bundle static libnftables in debian binaries, doesn't seem to leak memory and works also in ubuntu 18.04
