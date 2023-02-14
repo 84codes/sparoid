@@ -91,7 +91,6 @@ ExecStart=/usr/bin/sparoid-server --config /etc/sparoid.ini
 Restart=always
 ProtectSystem=full
 MemoryAccounting=true
-MemoryHigh=4M
 MemoryMax=32M
 
 [Install]
