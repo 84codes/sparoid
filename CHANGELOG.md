@@ -1,3 +1,7 @@
+## [1.1.12] - 2023-03-01
+
+- Systemd: Dont set MemoryHigh for the Sparoid service
+
 ## [1.1.11] - 2023-01-31
 
 - Client improvement: If hostname resolves to multiple IPs fdpass will connect to them in parallel and exit when the first succeeds
