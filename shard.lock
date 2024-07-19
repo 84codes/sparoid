@@ -2,7 +2,7 @@ version: 2.0
 shards:
   ameba:
     git: https://github.com/crystal-ameba/ameba.git
-    version: 1.1.0
+    version: 1.6.1
 
   dns:
     git: https://gitlab.com/jgillich/crystal-dns.git
@@ -10,5 +10,5 @@ shards:
 
   fdpass:
     git: https://github.com/84codes/fdpass.cr.git
-    version: 0.1.1+git.commit.a0e4330860662488e9393d63da8f5c16aae7c84c
+    version: 0.1.1+git.commit.d6c65f80dfad8a936804f434600a56e53b0a59df
 
