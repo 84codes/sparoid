@@ -27,14 +27,14 @@ module Sparoid
       self.new(key, hmac_key)
     end
 
-    def initialize(@key : String, @hmac_key : String, @ip = PublicIP.by_dns)
+    def initialize(@key : String, @hmac_key : String, @ip = PublicIP.by_http)
     end
 
     def send(host : String, port : Int32)
       self.class.send(@key, @hmac_key, host, port, @ip)
     end
 
-    def self.send(key : String, hmac_key : String, host : String, port : Int32, ip = PublicIP.by_dns) : Array(String)
+    def self.send(key : String, hmac_key : String, host : String, port : Int32, ip = PublicIP.by_http) : Array(String)
       ip = StaticArray[127u8, 0u8, 0u8, 1u8] if {"localhost", "127.0.0.1"}.includes? host
       package = generate_package(key, hmac_key, ip)
       udp_send(host, port, package).tap do
