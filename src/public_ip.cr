@@ -14,14 +14,18 @@ module Sparoid
         message.questions << DNS::Question.new(name: DNS::Name.new("myip.opendns.com"), query_type: DNS::RecordType::A)
         message.to_socket socket
         response = DNS::Message.from_socket socket
-        data = response.answers.first.data
-        case data
-        when DNS::IPv4Address
-          ip = data.to_slice
-          StaticArray(UInt8, 4).new do |i|
-            ip[i]
+        if answer = response.answers.first?
+          data = answer.data
+          case data
+          when DNS::IPv4Address
+            ip = data.to_slice
+            StaticArray(UInt8, 4).new do |i|
+              ip[i]
+            end
+          else raise "Unexpected response type from DNS request: #{data.inspect}"
           end
-        else raise "Unexpected response type from DNS request: #{data.inspect}"
+        else
+          raise "No A response from myip.opendns.com"
         end
       ensure
         socket.try &.close
