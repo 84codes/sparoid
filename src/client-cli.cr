@@ -8,7 +8,7 @@ port = 8484
 tcp_port = 22
 config_path = "~/.sparoid.ini"
 
-parser = OptionParser.new do |p|
+parser = OptionParser.new do |p| # ameba:disable Naming/BlockParameterName
   p.banner = "Usage: #{PROGRAM_NAME} [subcommand] [arguments]"
   p.invalid_option do |flag|
     STDERR.puts "ERROR: #{flag} is not a valid option."

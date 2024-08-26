@@ -14,7 +14,7 @@ module Sparoid
       hmac_key = ENV.fetch("SPAROID_HMAC_KEY", "")
       config_path = File.expand_path config_path, home: true
       if File.exists? config_path
-        config = File.open(config_path) { |f| INI.parse(f) }
+        config = File.open(config_path) { |file| INI.parse(file) }
         config.each do |_, section|
           section.each do |k, v|
             case k

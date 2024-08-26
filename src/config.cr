@@ -40,10 +40,10 @@ module Sparoid
     end
 
     private def parse_config
-      File.open(@config_file) do |f|
+      File.open(@config_file) do |file|
         @keys.clear
         @hmac_keys.clear
-        INI.parse(f).each do |_, values|
+        INI.parse(file).each do |_, values|
           # ignore sections, assume there's only the empty
           values.each do |k, v|
             case k
