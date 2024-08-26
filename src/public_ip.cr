@@ -69,20 +69,20 @@ module Sparoid
     end
 
     private def self.read_cache : StaticArray(UInt8, 4)
-      File.open(CACHE_PATH, "r") do |f|
-        f.flock_shared
-        str_to_arr(f.gets_to_end)
+      File.open(CACHE_PATH, "r") do |file|
+        file.flock_shared
+        str_to_arr(file.gets_to_end)
       end
     end
 
     private def self.write_cache(& : -> StaticArray(UInt8, 4)) : StaticArray(UInt8, 4)
-      File.open(CACHE_PATH, "a", 0o0644) do |f|
-        f.flock_exclusive
+      File.open(CACHE_PATH, "a", 0o0644) do |file|
+        file.flock_exclusive
         ip = yield
-        f.truncate
+        file.truncate
         ip.each_with_index do |e, i|
-          f.print '.' unless i.zero?
-          f.print e
+          file.print '.' unless i.zero?
+          file.print e
         end
         ip
       end
