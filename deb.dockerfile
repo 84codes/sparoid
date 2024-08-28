@@ -1,6 +1,8 @@
 ARG build_image
 FROM $build_image AS build-stage
 
+RUN command -v bzip2 || (apt-get update && apt-get install bzip2 -y)
+
 # build static libmnl
 WORKDIR /tmp/libmnl
 RUN curl -sL https://www.netfilter.org/pub/libmnl/libmnl-1.0.5.tar.bz2 | tar jx --strip-components=1 && \
