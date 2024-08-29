@@ -1,7 +1,7 @@
 ARG build_image
 FROM $build_image AS build-stage
 
-RUN command -v bzip2 || (apt-get update && apt-get install bzip2 -y)
+RUN apt-get update && apt-get install bzip2 --yes
 
 # build static libmnl
 WORKDIR /tmp/libmnl
