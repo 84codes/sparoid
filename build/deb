@@ -11,6 +11,13 @@ shards build --production --release --no-debug sparoid-server
 shards build --production --release --no-debug -Dgc_none sparoid
 strip bin/*
 
+# dpkg-shlibdeps requires presence of `debian/control`
+apt-get update && apt-get install dpkg-dev --yes
+mkdir debian
+touch debian/control
+shlib_depends=$(dpkg-shlibdeps -O -e bin/* 2> /dev/null);
+depends=${shlib_depends#shlibs:Depends=}
+rm -r debian
 
 mkdir debroot
 cd debroot
@@ -107,7 +114,7 @@ Homepage: https://github.com/84codes/sparoid
 Section: net
 Priority: optional
 Architecture: $architecture
-Depends: $(ldd ../bin/* | awk '/=>/ {print $1}' | xargs dpkg -S | awk -F: "/$architecture/ { print \$1 }" | sort -u | paste -sd,)
+Depends: $depends
 Installed-Size: $(du -ks usr/ | cut -f 1)
 Maintainer: 84codes <contact@84codes.com>
 Description: Single Packet Authorization
