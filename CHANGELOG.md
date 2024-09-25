@@ -1,7 +1,7 @@
 ## [1.1.13] - 2024-09-25
 
-- Lookup by http instead of dns
-- Build for ubuntu 24, debain 12 and 14
+- Lookup public IP by HTTP instead of DNS
+- Build for Ubuntu 24.04, Debian 12 and Fedora 39, 40
 
 ## [1.1.12] - 2023-03-01
 
