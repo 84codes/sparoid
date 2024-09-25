@@ -1,3 +1,8 @@
+## [1.1.13] - 2024-09-25
+
+- Lookup by http instead of dns
+- Build for ubuntu 24, debain 12 and 14
+
 ## [1.1.12] - 2023-03-01
 
 - Systemd: Dont set MemoryHigh for the Sparoid service
