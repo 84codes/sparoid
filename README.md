@@ -15,7 +15,9 @@ Direct nftables integration is also available, set the `nftables-cmd` and sparoi
 Ubuntu:
 
 ```sh
-wget -qO- https://packagecloud.io/cloudamqp/sparoid/gpgkey | sudo apt-key add -
+curl -fsSL https://packagecloud.io/cloudamqp/sparoid/gpgkey | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/sparoid.gpg >/dev/null
+# or with apt-key on older systems
+# wget -qO- https://packagecloud.io/cloudamqp/sparoid/gpgkey | sudo apt-key add -
 echo "deb https://packagecloud.io/cloudamqp/sparoid/ubuntu/ $(lsb_release -cs) main" |\
   sudo tee /etc/apt/sources.list.d/sparoid.list
 sudo apt-get update
@@ -102,12 +104,12 @@ bin/sparoid send hidden.example.co
 ssh hidden.example.co
 ```
 
-The Sparoid client has integration with the OpenSSH client, just add the following to your `~/.ssh/config`: 
+The Sparoid client has integration with the OpenSSH client, just add the following to your `~/.ssh/config`:
 
 ```
 Host *
   ProxyCommand sparoid connect -h %h -P %p
   ProxyUseFdpass yes
-``` 
+```
 
 It will then automatically send a UDP packet before connecting.
