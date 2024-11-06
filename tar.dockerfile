@@ -1,4 +1,4 @@
-FROM 84codes/crystal:1.5.0-alpine-latest as build-stage
+FROM 84codes/crystal:1.5.0-alpine-latest AS build-stage
 WORKDIR /tmp
 COPY shard.yml shard.lock README.md LICENSE ./
 RUN shards install --production
