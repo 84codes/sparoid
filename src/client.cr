@@ -38,7 +38,7 @@ module Sparoid
       ip = StaticArray[127u8, 0u8, 0u8, 1u8] if {"localhost", "127.0.0.1"}.includes? host
       package = generate_package(key, hmac_key, ip)
       udp_send(host, port, package).tap do
-        sleep 0.02 # sleep a short while to allow the receiver to parse and execute the packet
+        sleep 20.milliseconds # sleep a short while to allow the receiver to parse and execute the packet
       end
     end
 
@@ -72,7 +72,8 @@ module Sparoid
     # Send to all resolved IPs for the hostname
     private def self.udp_send(host, port, data) : Array(String)
       host_addresses = Socket::Addrinfo.udp(host, port, Socket::Family::INET)
-      socket = Socket.udp(Socket::Family::INET, blocking: true)
+      socket = Socket.udp(Socket::Family::INET)
+      Socket.set_blocking(socket.fd, true)
       host_addresses.each do |addrinfo|
         begin
           socket.send data, to: addrinfo.ip_address

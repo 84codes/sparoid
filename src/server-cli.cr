@@ -20,7 +20,7 @@ begin
       spawn do
         system sprintf(c.open_cmd, ip_str)
         unless c.close_cmd.empty?
-          sleep 15
+          sleep 15.seconds
           system sprintf(c.close_cmd, ip_str)
         end
       end
