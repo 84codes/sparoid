@@ -1,4 +1,4 @@
-FROM 84codes/crystal:1.2.1-debian-latest as builder
+FROM 84codes/crystal:1.19.1-debian-latest as builder
 WORKDIR /tmp
 COPY shard.yml shard.lock ./
 RUN shards install --production
