@@ -48,7 +48,7 @@ module Sparoid
       raise ArgumentError.new("Key must be 32 bytes hex encoded") if key.bytesize != 32
       raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") if hmac_key.bytesize != 32
 
-      msg = Message.new(ip)
+      msg = Message::V1.new(ip)
       encrypt(key, hmac_key, msg.to_slice(IO::ByteFormat::NetworkEndian))
     end
 

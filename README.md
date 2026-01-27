@@ -32,11 +32,12 @@ With nftables:
 
 ```sh
 cat > /etc/sparoid.ini << EOF
-bind = 0.0.0.0
+bind = 0.0.0.0,:: # starts a listener on both ipv4 and ipv6 
 port = 8484
 key = $SPAROID_KEY
 hmac-key = $SPAROID_HMAC_KEY
 nftables-cmd = add element inet filter sparoid { %s }
+nftablesv6-cmd = add element inet filter sparoid6 { %s }
 EOF
 
 cat > /etc/nftables.conf << EOF
@@ -60,10 +61,17 @@ table inet filter {
     udp dport 8484 accept
     ip saddr @jumphosts tcp dport ssh accept
     ip saddr @sparoid tcp dport ssh accept
+    ip6 saddr @sparoid6 tcp dport ssh accept
   }
 
   set sparoid {
     type ipv4_addr
+    flags timeout
+    timeout 5s
+  }
+
+  set sparoid6 {
+    type ipv6_addr
     flags timeout
     timeout 5s
   }

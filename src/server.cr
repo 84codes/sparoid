@@ -8,12 +8,12 @@ module Sparoid
     @keys : Array(Bytes)
     @hmac_keys : Array(Bytes)
 
-    def initialize(keys : Enumerable(String), hmac_keys : Enumerable(String), @on_accept : Proc(String, Nil))
+    def initialize(keys : Enumerable(String), hmac_keys : Enumerable(String), @on_accept : Proc(String, Nil), family : Socket::Family = Socket::Family::INET)
       @keys = keys.map &.hexbytes
       @hmac_keys = hmac_keys.map &.hexbytes
       raise ArgumentError.new("Key must be 32 bytes hex encoded") if @keys.any? { |k| k.bytesize != 32 }
       raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") if @hmac_keys.any? { |k| k.bytesize != 32 }
-      @socket = UDPSocket.new
+      @socket = UDPSocket.new(family)
     end
 
     def bind(host, port)
@@ -43,7 +43,7 @@ module Sparoid
       msg = Message.from_io(plain, IO::ByteFormat::NetworkEndian)
       verify_ts(msg.ts)
       verify_nounce(msg.nounce)
-      ip_str = ip_to_s(msg.ip)
+      ip_str = msg.ip_string
       @on_accept.call(ip_str)
       ip_str
     end
@@ -68,15 +68,6 @@ module Sparoid
     private def verify_ts(ts)
       if (Time.utc.to_unix_ms - ts).abs > MAX_TIMESTAMP_DIFF
         raise "timestamp off by more than #{MAX_TIMESTAMP_DIFF.milliseconds.seconds}s"
-      end
-    end
-
-    private def ip_to_s(ip)
-      String.build(15) do |str|
-        ip.each_with_index do |part, i|
-          str << '.' unless i == 0
-          str << part
-        end
       end
     end
 
