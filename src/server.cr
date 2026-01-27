@@ -8,7 +8,7 @@ module Sparoid
     @keys : Array(Bytes)
     @hmac_keys : Array(Bytes)
 
-    def initialize(keys : Enumerable(String), hmac_keys : Enumerable(String), @on_accept : Proc(String, Nil), family : Socket::Family = Socket::Family::INET)
+    def initialize(keys : Enumerable(String), hmac_keys : Enumerable(String), @on_accept : Proc(String, Socket::Family, Nil), @family : Socket::Family = Socket::Family::INET)
       @keys = keys.map &.hexbytes
       @hmac_keys = hmac_keys.map &.hexbytes
       raise ArgumentError.new("Key must be 32 bytes hex encoded") if @keys.any? { |k| k.bytesize != 32 }
@@ -44,7 +44,7 @@ module Sparoid
       verify_ts(msg.ts)
       verify_nounce(msg.nounce)
       ip_str = msg.ip_string
-      @on_accept.call(ip_str)
+      @on_accept.call(ip_str, @family)
       ip_str
     end
 

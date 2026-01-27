@@ -10,7 +10,7 @@ begin
   if c.nftables_cmd.bytesize > 0
     puts "nftables command: #{c.nftables_cmd}"
     nft = Nftables.new
-    on_accept(family : Socket::Family) = ->(ip_str : String) {
+    on_accept = ->(ip_str : String, family : Socket::Family) : Nil {
       case family
       when Socket::Family::INET6
         if c.nftablesv6_cmd.bytesize > 0
@@ -25,7 +25,7 @@ begin
   else
     puts "Open command: #{c.open_cmd}"
     puts "Close command: #{c.close_cmd}"
-    on_accept(family : Socket::Family? = nil) = ->(ip_str : String) : Nil {
+    on_accept = ->(ip_str : String, family : Socket::Family) : Nil {
       spawn do
         system sprintf(c.open_cmd, ip_str)
         unless c.close_cmd.empty?
@@ -38,7 +38,7 @@ begin
 
   servers = c.hosts.map do |host|
     family = host.includes?(":") ? Socket::Family::INET6 : Socket::Family::INET
-    s = Sparoid::Server.new(c.keys, c.hmac_keys, on_accept(family), family)
+    s = Sparoid::Server.new(c.keys, c.hmac_keys, on_accept, family)
     s.bind(host, c.port)
     s
   end
