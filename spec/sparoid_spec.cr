@@ -8,7 +8,7 @@ PORT      = 8484
 describe Sparoid::Server do
   it "works" do
     last_ip = nil
-    cb = ->(ip : String, family : Socket::Family) { last_ip = ip }
+    cb = ->(ip : String, _family : Socket::Family) { last_ip = ip }
     s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb)
     s.bind(HOST, PORT)
     spawn s.listen
@@ -22,7 +22,7 @@ describe Sparoid::Server do
   end
 
   it "fails invalid packet lengths" do
-    cb = ->(ip : String, family : Socket::Family) { ip.should be_nil }
+    cb = ->(ip : String, _family : Socket::Family) { ip.should be_nil }
     s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb)
     s.bind(HOST, PORT)
     spawn s.listen
@@ -37,7 +37,7 @@ describe Sparoid::Server do
   end
 
   it "fails invalid key" do
-    cb = ->(ip : String, family : Socket::Family) { ip.should be_nil }
+    cb = ->(ip : String, _family : Socket::Family) { ip.should be_nil }
     s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb)
     s.bind(HOST, PORT)
     spawn s.listen
@@ -50,7 +50,7 @@ describe Sparoid::Server do
   end
 
   it "fails invalid hmac key" do
-    cb = ->(ip : String, family : Socket::Family) { ip.should be_nil }
+    cb = ->(ip : String, _family : Socket::Family) { ip.should be_nil }
     s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb)
     s.bind(HOST, PORT)
     spawn s.listen
@@ -96,7 +96,7 @@ describe Sparoid::Server do
 
   it "client can send another IP" do
     last_ip = nil
-    cb = ->(ip : String, family : Socket::Family) { last_ip = ip }
+    cb = ->(ip : String, _family : Socket::Family) { last_ip = ip }
     s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb)
     s.bind("0.0.0.0", PORT)
     spawn s.listen

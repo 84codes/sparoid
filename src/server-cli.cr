@@ -25,7 +25,7 @@ begin
   else
     puts "Open command: #{c.open_cmd}"
     puts "Close command: #{c.close_cmd}"
-    on_accept = ->(ip_str : String, family : Socket::Family) : Nil {
+    on_accept = ->(ip_str : String, _family : Socket::Family) : Nil {
       spawn do
         system sprintf(c.open_cmd, ip_str)
         unless c.close_cmd.empty?
@@ -43,7 +43,7 @@ begin
     s
   end
 
-  servers.each do |s|
+  servers.each do |s| # ameba:disable Naming/BlockParameterName
     spawn s.listen
   end
 
