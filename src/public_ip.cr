@@ -8,15 +8,17 @@ module Sparoid
     def self.by_dns : StaticArray(UInt8, 4)
       with_cache do
         socket = UDPSocket.new
-        socket.connect("208.67.222.222", 53) # resolver1.opendns.com
+        socket.connect("216.239.32.10", 53) # ns1.google.com
         header = DNS::Header.new(op_code: DNS::OpCode::Query, recursion_desired: false)
         message = DNS::Message.new(header: header)
-        message.questions << DNS::Question.new(name: DNS::Name.new("myip.opendns.com"), query_type: DNS::RecordType::A)
+        message.questions << DNS::Question.new(name: DNS::Name.new("o-o.myaddr.l.google.com"), query_type: DNS::RecordType::TXT)
         message.to_socket socket
         response = DNS::Message.from_socket socket
         if answer = response.answers.first?
           data = answer.data
           case data
+          when Bytes
+            str_to_arr String.new(data)
           when DNS::IPv4Address
             ip = data.to_slice
             StaticArray(UInt8, 4).new do |i|
@@ -25,7 +27,7 @@ module Sparoid
           else raise "Unexpected response type from DNS request: #{data.inspect}"
           end
         else
-          raise "No A response from myip.opendns.com"
+          raise "No response from DNS"
         end
       ensure
         socket.try &.close
