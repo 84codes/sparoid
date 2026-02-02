@@ -2,13 +2,13 @@ require "socket"
 
 lib LibC
   struct IfAddrs
-    ifa_next : IfAddrs*
-    ifa_name : Char*
-    ifa_flags : UInt32
-    ifa_addr : Sockaddr*
-    ifa_netmask : Sockaddr*
-    ifa_dstaddr : Sockaddr*
-    ifa_data : Void*
+    ifa_next : IfAddrs*     # ameba:disable Lint/UselessAssign
+    ifa_name : Char*        # ameba:disable Lint/UselessAssign
+    ifa_flags : UInt32      # ameba:disable Lint/UselessAssign
+    ifa_addr : Sockaddr*    # ameba:disable Lint/UselessAssign
+    ifa_netmask : Sockaddr* # ameba:disable Lint/UselessAssign
+    ifa_dstaddr : Sockaddr* # ameba:disable Lint/UselessAssign
+    ifa_data : Void*        # ameba:disable Lint/UselessAssign
   end
 
   fun getifaddrs(ifap : IfAddrs**) : Int32
@@ -27,7 +27,7 @@ class Socket
         raise "Socket::IPAddress is not IPv6"
       end
 
-      return ipv6_addr8(@addr.as(LibC::In6Addr))
+      ipv6_addr8(@addr.as(LibC::In6Addr))
     end
   end
 end
@@ -41,7 +41,7 @@ class IPv6
     ipaddress.address_value.popcount.to_u8
   end
 
-  def self.get_public_ipv6_with_range(& : (Socket::IPAddress, UInt8, String) -> Nil)
+  def self.public_ipv6_with_range(& : (Socket::IPAddress, UInt8, String) -> Nil)
     ifap = Pointer(LibC::IfAddrs).null
 
     if LibC.getifaddrs(pointerof(ifap)) == -1

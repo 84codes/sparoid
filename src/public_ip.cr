@@ -40,11 +40,11 @@ module Sparoid
     # icanhazip.com is from Cloudflare
     def self.by_http : Array(String)
       with_cache do
-        ips = URLS.map do |url|
+        ips = URLS.compact_map do |url|
           resp = HTTP::Client.get(url)
           next unless resp.status_code == 200
           resp.body
-        end.compact
+        end
         raise "No valid response from icanhazip.com" if ips.empty?
         ips
       end

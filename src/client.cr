@@ -138,21 +138,20 @@ module Sparoid
 
       if host.loopback? || host.unspecified?
         ips = local_ips(host)
-        ips.each do |ip_bytes|
-          messages << Message::V2.from_ip(ip_bytes)
+        ips.each do |i|
+          messages << Message::V2.from_ip(i)
 
-          # TODO: Do we really want to send V1 messages for loopback?
-          if ip_bytes.size == 4
+          if i.size == 4
             static_array = uninitialized UInt8[4]
-            ip_bytes.copy_to static_array.to_slice
+            i.copy_to static_array.to_slice
             messages << Message::V1.new(static_array)
           end
         end
       else
         ipv6_added = false
-        IPv6.get_public_ipv6_with_range do |ip, cidr|
+        IPv6.public_ipv6_with_range do |ipv6, cidr|
           ipv6_added = true
-          messages << Message::V2.from_ip(slice_to_bytes(ip.ipv6_addr.to_slice, IO::ByteFormat::NetworkEndian), cidr)
+          messages << Message::V2.from_ip(slice_to_bytes(ipv6.ipv6_addr.to_slice, IO::ByteFormat::NetworkEndian), cidr)
         end
 
         public_ips = PublicIP.by_http
@@ -165,7 +164,7 @@ module Sparoid
           end
         end
       end
-      return messages
+      messages
     end
 
     private def self.local_ips(host : Socket::IPAddress) : Array(Bytes)
