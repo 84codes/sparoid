@@ -61,5 +61,6 @@ begin
   end
 rescue ex
   STDERR.puts "Sparoid error: #{ex.message}"
+  STDERR.puts ex.backtrace.join("\n")
   exit 1
 end

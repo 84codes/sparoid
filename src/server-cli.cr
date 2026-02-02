@@ -14,11 +14,13 @@ begin
       case family
       when Socket::Family::INET6
         if c.nftablesv6_cmd.bytesize > 0
+          puts "Running nftablesv6 command for #{ip_str}"
           nft.run_cmd sprintf(c.nftablesv6_cmd, ip_str)
         else
           puts "WARNING: no nftablesv6-cmd configured, skipping #{ip_str}"
         end
       when Socket::Family::INET
+        puts "Running nftables command for #{ip_str}"
         nft.run_cmd sprintf(c.nftables_cmd, ip_str)
       end
     }
@@ -37,9 +39,9 @@ begin
   end
 
   servers = c.hosts.map do |host|
-    family = host.includes?(":") ? Socket::Family::INET6 : Socket::Family::INET
-    s = Sparoid::Server.new(c.keys, c.hmac_keys, on_accept, family)
-    s.bind(host, c.port)
+    address = Socket::IPAddress.new(host, c.port)
+    s = Sparoid::Server.new(c.keys, c.hmac_keys, on_accept, address.family)
+    s.bind(address)
     s
   end
 

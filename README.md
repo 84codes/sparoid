@@ -32,7 +32,7 @@ With nftables:
 
 ```sh
 cat > /etc/sparoid.ini << EOF
-bind = 0.0.0.0,:: # starts a listener on both ipv4 and ipv6 
+bind = :: # starts a listener on both ipv4 and ipv6 
 port = 8484
 key = $SPAROID_KEY
 hmac-key = $SPAROID_HMAC_KEY

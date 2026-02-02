@@ -8,16 +8,16 @@ module Sparoid
     @keys : Array(Bytes)
     @hmac_keys : Array(Bytes)
 
-    def initialize(keys : Enumerable(String), hmac_keys : Enumerable(String), @on_accept : Proc(String, Socket::Family, Nil), @family : Socket::Family = Socket::Family::INET)
+    def initialize(keys : Enumerable(String), hmac_keys : Enumerable(String), @on_accept : Proc(String, Socket::Family, Nil), @family : Socket::Family)
       @keys = keys.map &.hexbytes
       @hmac_keys = hmac_keys.map &.hexbytes
       raise ArgumentError.new("Key must be 32 bytes hex encoded") if @keys.any? { |k| k.bytesize != 32 }
       raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") if @hmac_keys.any? { |k| k.bytesize != 32 }
-      @socket = UDPSocket.new(family)
+      @socket = UDPSocket.new(@family)
     end
 
-    def bind(host, port)
-      @socket.bind host, port
+    def bind(address : Socket::IPAddress)
+      @socket.bind address
     end
 
     def listen
@@ -44,7 +44,7 @@ module Sparoid
       verify_ts(msg.ts)
       verify_nounce(msg.nounce)
       ip_str = msg.ip_string
-      @on_accept.call(ip_str, @family)
+      @on_accept.call(ip_str, msg.family)
       ip_str
     end
 
@@ -57,7 +57,7 @@ module Sparoid
 
     private def verify_nounce(nounce)
       if @seen_nounces.includes? nounce
-        raise "reply-attack, nounce seen before"
+        raise "replay-attack, nounce seen before"
       end
       @seen_nounces.shift if @seen_nounces.size >= MAX_NOUNCES
       @seen_nounces.push nounce

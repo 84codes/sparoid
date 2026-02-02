@@ -31,8 +31,38 @@ module Sparoid
       end
     end
 
+    def self.ipv4_to_string(ip : Bytes | StaticArray(UInt8, 4), range : UInt8? = nil) : String
+      String.build(18) do |str|
+        4.times do |i|
+          str << '.' unless i == 0
+          str << ip[i]
+        end
+        if range
+          str << '/'
+          str << range
+        end
+      end
+    end
+
+    def self.ipv6_to_string(ip : Bytes, range : UInt8? = nil) : String
+      String.build(43) do |str|
+        8.times do |i|
+          str << ':' unless i == 0
+          str << '0' if ip[i * 2] < 0x10
+          ip[i * 2].to_s(str, 16)
+          str << '0' if ip[i * 2 + 1] < 0x10
+          ip[i * 2 + 1].to_s(str, 16)
+        end
+        if range
+          str << '/'
+          str << range
+        end
+      end
+    end
+
     struct V1 < Base
       getter ip : StaticArray(UInt8, 4)
+      getter family = Socket::Family::INET
 
       def initialize(@ts, @nounce, @ip)
         super(1, @ts, @nounce)
@@ -59,12 +89,7 @@ module Sparoid
       end
 
       def ip_string : String
-        String.build(15) do |str|
-          @ip.each_with_index do |part, i|
-            str << '.' unless i == 0
-            str << part
-          end
-        end
+        Message.ipv4_to_string(@ip)
       end
 
       def self.from_io(io, format) : V1
@@ -78,65 +103,70 @@ module Sparoid
     end
 
     struct V2 < Base
-      getter family : UInt8
-      getter ip : StaticArray(UInt8, 16) | StaticArray(UInt8, 4)
+      getter ip : Bytes
+      getter family : Socket::Family
+      getter range : UInt8
 
-      def initialize(@ts, @nounce, @family, @ip)
+      # Add ranges to ip, e.g 192.168.1.1/32 and same for ipv6. /128
+
+      def initialize(@ts, @nounce, @ip, range : UInt8? = nil)
         super(2, @ts, @nounce)
+        case @ip.size
+        when 4
+          @range = range || 32u8
+          @family = Socket::Family::INET
+        when 16
+          @range = range || 128u8
+          @family = Socket::Family::INET6
+        else
+          raise "IP must be 4 (IPv4) or 16 (IPv6) bytes, got #{@ip.size}"
+        end
       end
 
-      def initialize(@family, @ip)
+      def initialize(@ip, range : UInt8? = nil)
         super(2)
+        case @ip.size
+        when 4
+          @range = range || 32u8
+          @family = Socket::Family::INET
+        when 16
+          @range = range || 128u8
+          @family = Socket::Family::INET6
+        else
+          raise "IP must be 4 (IPv4) or 16 (IPv6) bytes, got #{@ip.size}"
+        end
       end
 
-      # Create V2 from IPv4 StaticArray
-      def self.from_ip(ip : StaticArray(UInt8, 4) | StaticArray(UInt8, 16)) : V2
-        family = case ip.size
-                 when  4 then 4_u8
-                 when 16 then 6_u8
-                 else
-                   raise ArgumentError.new("IP must be StaticArray of 4 (IPv4) or 16 (IPv6) bytes")
-                 end
-        V2.new(family, ip)
+      def self.from_ip(ip : Bytes, range : UInt8? = nil) : V2
+        V2.new(ip, range)
       end
 
       def to_io(io, format)
         io.write_bytes @version, format
         io.write_bytes @ts, format
         io.write @nounce
-        io.write_bytes @family, format
+        io.write_bytes @family == Socket::Family::INET ? 4u8 : 6u8, format
         io.write @ip
+        io.write_bytes @range, format
       end
 
       def to_slice(format : IO::ByteFormat) : Bytes
-        slice = Bytes.new(45) # version (4) + timestamp (8) + nounce (16) + family (1) + ip (16)
+        slice = Bytes.new(46) # version (4) + timestamp (8) + nounce (16) + family (1) + ip (16) + range (1)
         format.encode(@version, slice[0, 4])
         format.encode(@ts, slice[4, 8])
         @nounce.to_slice.copy_to slice[12, @nounce.size]
-        slice[28] = @family
-        @ip.to_slice.copy_to slice[29, @ip.size]
+        slice[28] = @family == Socket::Family::INET ? 4_u8 : 6_u8
+        @ip.copy_to slice[29, @ip.size]
+        slice[29 + @ip.size] = @range
         slice
       end
 
       def ip_string : String
         case @family
-        when 4_u8
-          # IPv4: first 4 bytes
-          String.build(15) do |str|
-            4.times do |i|
-              str << '.' unless i == 0
-              str << @ip[i]
-            end
-          end
-        when 6_u8
-          # IPv6: all 16 bytes as hex pairs with colons
-          String.build(39) do |str|
-            8.times do |i|
-              str << ':' unless i == 0
-              str << @ip[i * 2].to_s(16).rjust(2, '0')
-              str << @ip[i * 2 + 1].to_s(16).rjust(2, '0')
-            end
-          end
+        when Socket::Family::INET
+          Message.ipv4_to_string(@ip, @range)
+        when Socket::Family::INET6
+          Message.ipv6_to_string(@ip, @range)
         else
           raise "Unknown IP family: #{@family}"
         end
@@ -147,9 +177,16 @@ module Sparoid
         nounce = uninitialized UInt8[16]
         io.read_fully(nounce.to_slice)
         family = UInt8.from_io(io, format)
-        ip = uninitialized UInt8[16]
+        ip = if family == 4_u8
+               Bytes.new(4)
+             elsif family == 6_u8
+               Bytes.new(16)
+             else
+               raise "Unknown IP family: #{family}"
+             end
         io.read_fully(ip.to_slice)
-        self.new(ts, nounce, family, ip)
+        range = UInt8.from_io(io, format)
+        self.new(ts, nounce, ip, range)
       end
     end
   end
