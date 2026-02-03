@@ -47,7 +47,8 @@ flush ruleset
 table inet filter {
   chain prerouting {
     type filter hook prerouting priority -300
-    udp dport 8484 meter rate-limit-sparoid { ip saddr limit rate over 1/second burst 1 packets } counter drop
+    udp dport 8484 meter rate-limit-sparoid { ip saddr limit rate over 1/second burst 8 packets } counter drop
+    udp dport 8484 meter rate-limit-sparoid6 { ip6 saddr limit rate over 1/second burst 8 packets } counter drop
     udp dport 8484 notrack
   }
 
@@ -66,13 +67,13 @@ table inet filter {
 
   set sparoid {
     type ipv4_addr
-    flags timeout
+    flags timeout, interval
     timeout 5s
   }
 
   set sparoid6 {
     type ipv6_addr
-    flags timeout
+    flags timeout, interval
     timeout 5s
   }
 
