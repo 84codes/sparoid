@@ -4,7 +4,7 @@ require "./nftables"
 
 begin
   c = Sparoid::Config.new
-  puts "Listening: #{c.hosts.join(", ")}:#{c.port}"
+  puts "Listening: #{c.host}:#{c.port}"
   puts "Keys: #{c.keys.size}"
   puts "HMAC keys: #{c.hmac_keys.size}"
   if c.nftables_cmd.bytesize > 0
@@ -38,18 +38,10 @@ begin
     }
   end
 
-  servers = c.hosts.map do |host|
-    address = Socket::IPAddress.new(host, c.port)
-    s = Sparoid::Server.new(c.keys, c.hmac_keys, on_accept, address.family)
-    s.bind(address)
-    s
-  end
-
-  servers.each do |s| # ameba:disable Naming/BlockParameterName
-    spawn s.listen
-  end
-
-  sleep
+  address = Socket::IPAddress.new(c.host, c.port)
+  s = Sparoid::Server.new(c.keys, c.hmac_keys, on_accept, address.family)
+  s.bind(address)
+  s.listen
 rescue ex
   STDERR.puts "ERROR: #{ex.message}"
   exit 1

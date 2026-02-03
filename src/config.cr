@@ -6,13 +6,13 @@ module Sparoid
   class Config
     getter keys = Array(String).new
     getter hmac_keys = Array(String).new
-    getter hosts = ["::"]
+    getter host = "127.0.0.1"
     getter port = 8484
     getter open_cmd = ""
     getter close_cmd = ""
     getter config_file = "/etc/sparoid.ini"
-    getter nftables_cmd = " echo 'nftables-cmd not set' "
-    getter nftablesv6_cmd = " echo 'nftablesv6-cmd not set' "
+    getter nftables_cmd = ""
+    getter nftablesv6_cmd = ""
 
     def initialize
       parse_options
@@ -50,7 +50,7 @@ module Sparoid
             case k
             when "key"            then @keys << v
             when "hmac-key"       then @hmac_keys << v
-            when "bind"           then @hosts = v.split(',').map(&.strip)
+            when "bind"           then @host = v
             when "port"           then @port = v.to_i
             when "open-cmd"       then @open_cmd = v
             when "close-cmd"      then @close_cmd = v
