@@ -32,28 +32,27 @@ module Sparoid
       end
     end
 
-    # ifconfig.co/ip is another option
-    def self.by_http : StaticArray(UInt8, 4)
-      with_cache do
-        resp = HTTP::Client.get("http://checkip.amazonaws.com")
-        raise "Could not retrive public ip" unless resp.status_code == 200
-        str_to_arr resp.body
-      end
-    end
+    URLS = [
+      "http://ipv6.icanhazip.com",
+      "http://ipv4.icanhazip.com",
+    ]
 
-    private def self.str_to_arr(str : String) : StaticArray(UInt8, 4)
-      ip = StaticArray(UInt8, 4).new(0_u8)
-      i = 0
-      str.split(".") do |part|
-        ip[i] = part.to_u8
-        i += 1
+    # icanhazip.com is from Cloudflare
+    def self.by_http : Array(String)
+      with_cache do
+        ips = URLS.compact_map do |url|
+          resp = HTTP::Client.get(url)
+          next unless resp.status_code == 200
+          resp.body
+        end
+        raise "No valid response from icanhazip.com" if ips.empty?
+        ips
       end
-      ip
     end
 
     CACHE_PATH = ENV.fetch("SPAROID_CACHE_PATH", "/tmp/.sparoid_public_ip")
 
-    private def self.with_cache(&blk : -> StaticArray(UInt8, 4)) : StaticArray(UInt8, 4)
+    private def self.with_cache(&blk : -> Array(String)) : Array(String)
       if up_to_date_cache?
         read_cache
       else
@@ -68,23 +67,23 @@ module Sparoid
       false
     end
 
-    private def self.read_cache : StaticArray(UInt8, 4)
+    private def self.read_cache : Array(String)
       File.open(CACHE_PATH, "r") do |file|
         file.flock_shared
-        str_to_arr(file.gets_to_end)
+        file.gets_to_end.split("\n").map(&.strip)
       end
     end
 
-    private def self.write_cache(& : -> StaticArray(UInt8, 4)) : StaticArray(UInt8, 4)
+    private def self.write_cache(& : -> Array(String)) : Array(String)
       File.open(CACHE_PATH, "a", 0o0644) do |file|
         file.flock_exclusive
-        ip = yield
-        file.truncate
-        ip.each_with_index do |e, i|
-          file.print '.' unless i.zero?
-          file.print e
+        ips = yield
+        file.truncate(0)
+        file.rewind
+        ips.each do |ip|
+          file.puts ip
         end
-        ip
+        ips
       end
     end
   end
