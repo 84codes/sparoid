@@ -1,3 +1,11 @@
+## Unreleased
+
+- Server can bind on IPv6 addresses (e.g., `::` to accept both IPv4 and IPv6 connections)
+- Breaking (library API only): `Server.new` now requires an `address` parameter
+- Breaking (library API only): `Server.bind` no longer takes arguments
+
+Note: The breaking changes only affect usage of the `Server` class in Crystal code, not the built application interface.
+
 ## [1.1.13] - 2024-09-25
 
 - Lookup public IP by HTTP instead of DNS
