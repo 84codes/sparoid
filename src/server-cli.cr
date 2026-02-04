@@ -28,8 +28,8 @@ begin
     }
   end
   address = Socket::IPAddress.new(c.host, c.port)
-  s = Sparoid::Server.new(c.keys, c.hmac_keys, on_accept, address.family)
-  s.bind(address)
+  s = Sparoid::Server.new(c.keys, c.hmac_keys, on_accept, address)
+  s.bind
   s.listen
 rescue ex
   STDERR.puts "ERROR: #{ex.message}"
