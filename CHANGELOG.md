@@ -1,4 +1,4 @@
-## Unreleased
+## [1.2.0] - 2026-02-04
 
 - Server can bind on IPv6 addresses (e.g., `::` to accept both IPv4 and IPv6 connections)
 - Breaking (library API only): `Server.new` now requires an `address` parameter
