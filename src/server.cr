@@ -8,16 +8,16 @@ module Sparoid
     @keys : Array(Bytes)
     @hmac_keys : Array(Bytes)
 
-    def initialize(keys : Enumerable(String), hmac_keys : Enumerable(String), @on_accept : Proc(String, Nil))
+    def initialize(keys : Enumerable(String), hmac_keys : Enumerable(String), @on_accept : Proc(String, Nil), family : Socket::Family)
       @keys = keys.map &.hexbytes
       @hmac_keys = hmac_keys.map &.hexbytes
       raise ArgumentError.new("Key must be 32 bytes hex encoded") if @keys.any? { |k| k.bytesize != 32 }
       raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") if @hmac_keys.any? { |k| k.bytesize != 32 }
-      @socket = UDPSocket.new
+      @socket = UDPSocket.new(family)
     end
 
-    def bind(host, port)
-      @socket.bind host, port
+    def bind(address : Socket::IPAddress)
+      @socket.bind address
     end
 
     def listen
