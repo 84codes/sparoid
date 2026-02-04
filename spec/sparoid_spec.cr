@@ -98,13 +98,29 @@ describe Sparoid::Server do
   it "client can send another IP" do
     last_ip = nil
     cb = ->(ip : String) { last_ip = ip }
-    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS.family)
-    s.bind(ADDRESS)
+    address = Socket::IPAddress.new("0.0.0.0", PORT)
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, address.family)
+    s.bind(address)
     spawn s.listen
     Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "0.0.0.0", PORT, StaticArray[1u8, 1u8, 1u8, 1u8])
     Fiber.yield
     s.@seen_nounces.size.should eq 1
     last_ip.should eq "1.1.1.1"
+  ensure
+    s.try &.close
+  end
+
+  it "can accept IPv4 connections on ::" do
+    last_ip = nil
+    cb = ->(ip : String) { last_ip = ip }
+    address = Socket::IPAddress.new("::", PORT)
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, address.family)
+    s.bind(address)
+    spawn s.listen
+    Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "127.0.0.1", PORT)
+    Fiber.yield
+    s.@seen_nounces.size.should eq 1
+    last_ip.should eq "127.0.0.1"
   ensure
     s.try &.close
   end
