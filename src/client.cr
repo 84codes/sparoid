@@ -125,13 +125,16 @@ module Sparoid
       buffer.to_slice
     end
 
+    # Messages of version 1 is being prepended in the messages array so that they are sent first. This ensures
+    # complete backwards compatibility with IPv4-only receivers due to the rate-limit defined in the nftables examples
+    # in the README.
     private def self.generate_messages(host : Socket::IPAddress, ip : StaticArray(UInt8, 4) | StaticArray(UInt8, 16)? = nil) : Array(Message::Base)
       messages = [] of Message::Base
       if ip
         ip_bytes = slice_to_bytes(ip.to_slice, IO::ByteFormat::NetworkEndian)
         messages << Message::V2.from_ip(ip_bytes)
         if ip_bytes.size == 4
-          messages << Message::V1.new(ip)
+          messages.unshift(Message::V1.new(ip))
         end
         return messages
       end
@@ -144,7 +147,7 @@ module Sparoid
           if i.size == 4
             static_array = uninitialized UInt8[4]
             i.copy_to static_array.to_slice
-            messages << Message::V1.new(static_array)
+            messages.unshift(Message::V1.new(static_array))
           end
         end
       else
@@ -158,7 +161,7 @@ module Sparoid
         public_ips.each do |ip_str|
           if ip = Socket::IPAddress.parse_v4_fields?(ip_str.strip)
             messages << Message::V2.from_ip(slice_to_bytes(ip.to_slice, IO::ByteFormat::NetworkEndian))
-            messages << Message::V1.new(ip)
+            messages.unshift(Message::V1.new(ip))
           elsif ip = Socket::IPAddress.parse_v6_fields?(ip_str.strip)
             messages << Message::V2.from_ip(slice_to_bytes(ip.to_slice, IO::ByteFormat::NetworkEndian)) unless ipv6_added
           end
