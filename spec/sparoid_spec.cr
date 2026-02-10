@@ -104,7 +104,7 @@ describe Sparoid::Server do
     Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "0.0.0.0", address.port, StaticArray[1u8, 1u8, 1u8, 1u8])
     Fiber.yield
     s.@seen_nounces.size.should eq 2
-    last_ip.should eq "1.1.1.1"
+    last_ip.should eq "1.1.1.1/32"
   ensure
     s.try &.close
   end
