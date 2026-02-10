@@ -152,9 +152,9 @@ module Sparoid
           end
         end
       else
-        ipv6_added = false
+        ipv6_native = false
         IPv6.public_ipv6_with_range do |ipv6, cidr|
-          ipv6_added = true
+          ipv6_native = true
           messages << Message::V2.from_ip(slice_to_bytes(ipv6.ipv6_addr.to_slice, IO::ByteFormat::NetworkEndian), cidr)
         end
 
@@ -164,7 +164,7 @@ module Sparoid
             messages << Message::V2.from_ip(slice_to_bytes(ip.to_slice, IO::ByteFormat::NetworkEndian))
             messages.unshift(Message::V1.new(ip))
           elsif ip = Socket::IPAddress.parse_v6_fields?(ip_str.strip)
-            messages << Message::V2.from_ip(slice_to_bytes(ip.to_slice, IO::ByteFormat::NetworkEndian)) unless ipv6_added
+            messages << Message::V2.from_ip(slice_to_bytes(ip.to_slice, IO::ByteFormat::NetworkEndian)) unless ipv6_native
           end
         end
       end
