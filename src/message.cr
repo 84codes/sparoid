@@ -113,9 +113,15 @@ module Sparoid
         super(2, @ts, @nounce)
         case @ip.size
         when 4
+          if range && range > 32
+            raise "Invalid range for IPv4: #{range}, must be between 0 and 32"
+          end
           @range = range || 32u8
           @family = Socket::Family::INET
         when 16
+          if range && range > 128
+            raise "Invalid range for IPv6: #{range}, must be between 0 and 128"
+          end
           @range = range || 128u8
           @family = Socket::Family::INET6
         else
@@ -127,9 +133,15 @@ module Sparoid
         super(2)
         case @ip.size
         when 4
+          if range && range > 32
+            raise "Invalid range for IPv4: #{range}, must be between 0 and 32"
+          end
           @range = range || 32u8
           @family = Socket::Family::INET
         when 16
+          if range && range > 128
+            raise "Invalid range for IPv6: #{range}, must be between 0 and 128"
+          end
           @range = range || 128u8
           @family = Socket::Family::INET6
         else

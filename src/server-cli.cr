@@ -8,21 +8,24 @@ begin
   puts "Listening: #{c.host}:#{c.port}"
   puts "Keys: #{c.keys.size}"
   puts "HMAC keys: #{c.hmac_keys.size}"
-  if c.nftables_cmd.bytesize > 0
+  if c.nftables_cmd.bytesize > 0 || c.nftablesv6_cmd.bytesize > 0
     puts "nftables command: #{c.nftables_cmd}"
+    puts "nftablesv6 command: #{c.nftablesv6_cmd}"
     nft = Nftables.new
     on_accept = ->(ip_str : String, family : Socket::Family) : Nil {
       case family
       when Socket::Family::INET6
         if c.nftablesv6_cmd.bytesize > 0
-          puts "Running nftablesv6 command for #{ip_str}"
           nft.run_cmd sprintf(c.nftablesv6_cmd, ip_str)
         else
           puts "WARNING: no nftablesv6-cmd configured, skipping #{ip_str}"
         end
       when Socket::Family::INET
-        puts "Running nftables command for #{ip_str}"
-        nft.run_cmd sprintf(c.nftables_cmd, ip_str)
+        if c.nftables_cmd.bytesize > 0
+          nft.run_cmd sprintf(c.nftables_cmd, ip_str)
+        else
+          puts "WARNING: no nftables-cmd configured, skipping #{ip_str}"
+        end
       end
     }
   else
