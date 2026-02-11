@@ -32,6 +32,9 @@ module Sparoid
 
     def self.from_io(io, format)
       version = Int32.from_io(io, format)
+      if version != 1
+        raise "Unsupported message version: #{version}"
+      end
       ts = Int64.from_io(io, format)
       nounce = uninitialized UInt8[16]
       io.read_fully(nounce.to_slice)
