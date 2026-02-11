@@ -1,4 +1,5 @@
 ## [1.2.1] - 2026-02-11
+
 - Server does not accept other message versions than 1
 
 ## [1.2.0] - 2026-02-04
