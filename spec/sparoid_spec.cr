@@ -123,4 +123,17 @@ describe Sparoid::Server do
   ensure
     s.try &.close
   end
+
+  it "raises on unsupported message version" do
+    ts = Time.utc.to_unix_ms
+    nounce = StaticArray(UInt8, 16).new(0_u8)
+    Random::Secure.random_bytes(nounce.to_slice)
+    msg = Sparoid::Message.new(2, ts, nounce, StaticArray[127u8, 0u8, 0u8, 1u8])
+
+    msg.to_slice(IO::ByteFormat::NetworkEndian).tap do |slice|
+      expect_raises(Exception, "Unsupported message version: 2") do
+        Sparoid::Message.from_io(IO::Memory.new(slice), IO::ByteFormat::NetworkEndian)
+      end
+    end
+  end
 end
