@@ -44,6 +44,8 @@ module Sparoid
           resp = HTTP::Client.get(url)
           next unless resp.status_code == 200
           resp.body
+        rescue
+          nil
         end
         raise "No valid response from icanhazip.com" if ips.empty?
         ips
