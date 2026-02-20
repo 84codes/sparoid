@@ -126,17 +126,11 @@ module Sparoid
       buffer.to_slice
     end
 
-    # Messages of version 1 is being prepended in the messages array so that they are sent first. This ensures
-    # complete backwards compatibility with IPv4-only receivers due to the rate-limit defined in the nftables examples
-    # in the README.
-    private def self.generate_messages(host : Socket::IPAddress, ip : StaticArray(UInt8, 4) | StaticArray(UInt8, 16)? = nil) : Array(Message::Base)
-      messages = [] of Message::Base
+    private def self.generate_messages(host : Socket::IPAddress, ip : StaticArray(UInt8, 4) | StaticArray(UInt8, 16)? = nil) : Array(Message::V2)
+      messages = [] of Message::V2
       if ip
         ip_bytes = slice_to_bytes(ip.to_slice, IO::ByteFormat::NetworkEndian)
         messages << Message::V2.from_ip(ip_bytes)
-        if ip_bytes.size == 4
-          messages.unshift(Message::V1.new(ip))
-        end
         return messages
       end
 
@@ -144,30 +138,27 @@ module Sparoid
         ips = local_ips(host)
         ips.each do |i|
           messages << Message::V2.from_ip(i)
-
-          if i.size == 4
-            static_array = uninitialized UInt8[4]
-            i.copy_to static_array.to_slice
-            messages.unshift(Message::V1.new(static_array))
-          end
         end
-      else
-        ipv6_native = false
-        IPv6.public_ipv6_with_range do |ipv6, cidr|
-          ipv6_native = true
-          messages << Message::V2.from_ip(slice_to_bytes(ipv6.ipv6_addr.to_slice, IO::ByteFormat::NetworkEndian), cidr)
-        end
+        return messages
+      end
 
-        public_ips = PublicIP.by_http
-        public_ips.each do |ip_str|
-          if ip = Socket::IPAddress.parse_v4_fields?(ip_str.strip)
-            messages << Message::V2.from_ip(slice_to_bytes(ip.to_slice, IO::ByteFormat::NetworkEndian))
-            messages.unshift(Message::V1.new(ip))
-          elsif ip = Socket::IPAddress.parse_v6_fields?(ip_str.strip)
-            messages << Message::V2.from_ip(slice_to_bytes(ip.to_slice, IO::ByteFormat::NetworkEndian)) unless ipv6_native
-          end
+      ipv6_native = false
+      IPv6.public_ipv6_with_range do |ipv6, cidr|
+        ipv6_native = true
+        messages << Message::V2.from_ip(slice_to_bytes(ipv6.ipv6_addr.to_slice, IO::ByteFormat::NetworkEndian), cidr)
+      end
+
+      public_ips = PublicIP.by_http
+      public_ips.each do |ip_str|
+        if ip = Socket::IPAddress.parse_v4_fields?(ip_str.strip)
+          messages << Message::V2.from_ip(slice_to_bytes(ip.to_slice, IO::ByteFormat::NetworkEndian))
+        elsif ip = Socket::IPAddress.parse_v6_fields?(ip_str.strip)
+          messages << Message::V2.from_ip(slice_to_bytes(ip.to_slice, IO::ByteFormat::NetworkEndian)) unless ipv6_native
         end
       end
+
+      # Sort messages by family to prioritize IPv4 address in case there is a rate limit on the receiver side and it can only process 1 packet / s
+      messages.sort_by! { |msg| msg.family }
       messages
     end
 
