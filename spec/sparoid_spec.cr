@@ -1,4 +1,5 @@
 require "./spec_helper"
+require "socket"
 
 KEYS      = Array(String).new(2) { Random::Secure.hex(32) }
 HMAC_KEYS = Array(String).new(2) { Random::Secure.hex(32) }
@@ -7,7 +8,7 @@ ADDRESS   = Socket::IPAddress.new("127.0.0.1", 8484)
 describe Sparoid::Server do
   it "works" do
     last_ip = nil
-    cb = ->(ip : String) { last_ip = ip }
+    cb = ->(ip : String, _family : Socket::Family) { last_ip = ip }
     s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS)
     s.bind
     spawn s.listen
@@ -15,13 +16,13 @@ describe Sparoid::Server do
     Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, ADDRESS.address, ADDRESS.port)
     Fiber.yield
     s.@seen_nounces.size.should eq 1
-    last_ip.should eq "127.0.0.1"
+    last_ip.should eq "127.0.0.1/32"
   ensure
     s.try &.close
   end
 
   it "fails invalid packet lengths" do
-    cb = ->(ip : String) { ip.should be_nil }
+    cb = ->(ip : String, _family : Socket::Family) { ip.should be_nil }
     s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS)
     s.bind
     spawn s.listen
@@ -36,7 +37,7 @@ describe Sparoid::Server do
   end
 
   it "fails invalid key" do
-    cb = ->(ip : String) { ip.should be_nil }
+    cb = ->(ip : String, _family : Socket::Family) { ip.should be_nil }
     s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS)
     s.bind
     spawn s.listen
@@ -49,7 +50,7 @@ describe Sparoid::Server do
   end
 
   it "fails invalid hmac key" do
-    cb = ->(ip : String) { ip.should be_nil }
+    cb = ->(ip : String, _family : Socket::Family) { ip.should be_nil }
     s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS)
     s.bind
     spawn s.listen
@@ -63,7 +64,7 @@ describe Sparoid::Server do
 
   it "client can cache IP" do
     accepted = 0
-    cb = ->(_ip : String) { accepted += 1 }
+    cb = ->(_ip : String, _family : Socket::Family) { accepted += 1 }
     s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS)
     s.bind
     spawn s.listen
@@ -79,7 +80,7 @@ describe Sparoid::Server do
 
   it "works with two keys" do
     accepted = 0
-    cb = ->(_ip : String) { accepted += 1 }
+    cb = ->(_ip : String, _family : Socket::Family) { accepted += 1 }
     s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS)
     s.bind
     spawn s.listen
@@ -95,7 +96,7 @@ describe Sparoid::Server do
 
   it "client can send another IP" do
     last_ip = nil
-    cb = ->(ip : String) { last_ip = ip }
+    cb = ->(ip : String, _family : Socket::Family) { last_ip = ip }
     address = Socket::IPAddress.new("0.0.0.0", ADDRESS.port)
     s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, address)
     s.bind
@@ -103,19 +104,22 @@ describe Sparoid::Server do
     Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "0.0.0.0", address.port, StaticArray[1u8, 1u8, 1u8, 1u8])
     Fiber.yield
     s.@seen_nounces.size.should eq 1
-    last_ip.should eq "1.1.1.1"
+    last_ip.should eq "1.1.1.1/32"
   ensure
     s.try &.close
   end
 
-  it "can accept IPv4 connections on ::" do
+  it "can parse v1 messages" do
     last_ip = nil
-    cb = ->(ip : String) { last_ip = ip }
-    address = Socket::IPAddress.new("::", ADDRESS.port)
-    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, address)
+    cb = ->(ip : String, _family : Socket::Family) { last_ip = ip }
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS)
     s.bind
     spawn s.listen
-    Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "127.0.0.1", address.port)
+    v1_msg = Sparoid::Message::V1.new(StaticArray[127u8, 0u8, 0u8, 1u8])
+    data = Sparoid::Client.generate_package(KEYS.first, HMAC_KEYS.first, v1_msg)
+    socket = UDPSocket.new
+    socket.send data, to: ADDRESS
+    socket.close
     Fiber.yield
     s.@seen_nounces.size.should eq 1
     last_ip.should eq "127.0.0.1"
@@ -123,16 +127,36 @@ describe Sparoid::Server do
     s.try &.close
   end
 
-  it "raises on unsupported message version" do
-    ts = Time.utc.to_unix_ms
-    nounce = StaticArray(UInt8, 16).new(0_u8)
-    Random::Secure.random_bytes(nounce.to_slice)
-    msg = Sparoid::Message.new(2, ts, nounce, StaticArray[127u8, 0u8, 0u8, 1u8])
+  it "can parse v2 messages" do
+    last_ip = nil
+    cb = ->(ip : String, _family : Socket::Family) { last_ip = ip }
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS)
+    s.bind
+    spawn s.listen
+    v2_msg = Sparoid::Message::V2.from_ip(Slice[127u8, 0u8, 0u8, 1u8])
+    data = Sparoid::Client.generate_package(KEYS.first, HMAC_KEYS.first, v2_msg)
+    socket = UDPSocket.new
+    socket.send data, to: ADDRESS
+    socket.close
+    Fiber.yield
+    s.@seen_nounces.size.should eq 1
+    last_ip.should eq "127.0.0.1/32"
+  ensure
+    s.try &.close
+  end
 
-    msg.to_slice(IO::ByteFormat::NetworkEndian).tap do |slice|
-      expect_raises(Exception, "Unsupported message version: 2") do
-        Sparoid::Message.from_io(IO::Memory.new(slice), IO::ByteFormat::NetworkEndian)
-      end
-    end
+  it "can accept IPv4 connections on ::" do
+    last_ip = nil
+    cb = ->(ip : String, _family : Socket::Family) { last_ip = ip }
+    address = Socket::IPAddress.new("::", ADDRESS.port)
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, address)
+    s.bind
+    spawn s.listen
+    Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "127.0.0.1", address.port)
+    Fiber.yield
+    s.@seen_nounces.size.should eq 1
+    last_ip.should eq "127.0.0.1/32"
+  ensure
+    s.try &.close
   end
 end
