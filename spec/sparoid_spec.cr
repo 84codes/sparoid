@@ -15,7 +15,7 @@ describe Sparoid::Server do
     s.@seen_nounces.size.should eq 0
     Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, ADDRESS.address, ADDRESS.port)
     Fiber.yield
-    s.@seen_nounces.size.should eq 2
+    s.@seen_nounces.size.should eq 1
     last_ip.should eq "127.0.0.1/32"
   ensure
     s.try &.close
@@ -72,8 +72,8 @@ describe Sparoid::Server do
     c = Sparoid::Client.new(KEYS.first, HMAC_KEYS.first)
     c.send(ADDRESS.address, ADDRESS.port)
     Fiber.yield
-    s.@seen_nounces.size.should eq 2
-    accepted.should eq 2
+    s.@seen_nounces.size.should eq 1
+    accepted.should eq 1
   ensure
     s.try &.close
   end
@@ -88,8 +88,8 @@ describe Sparoid::Server do
     Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, ADDRESS.address, ADDRESS.port)
     Sparoid::Client.send(KEYS.last, HMAC_KEYS.last, ADDRESS.address, ADDRESS.port)
     Fiber.yield
-    s.@seen_nounces.size.should eq 4
-    accepted.should eq 4
+    s.@seen_nounces.size.should eq 2
+    accepted.should eq 2
   ensure
     s.try &.close
   end
@@ -103,8 +103,44 @@ describe Sparoid::Server do
     spawn s.listen
     Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "0.0.0.0", address.port, StaticArray[1u8, 1u8, 1u8, 1u8])
     Fiber.yield
-    s.@seen_nounces.size.should eq 2
+    s.@seen_nounces.size.should eq 1
     last_ip.should eq "1.1.1.1/32"
+  ensure
+    s.try &.close
+  end
+
+  it "can parse v1 messages" do
+    last_ip = nil
+    cb = ->(ip : String, _family : Socket::Family) { last_ip = ip }
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS)
+    s.bind
+    spawn s.listen
+    v1_msg = Sparoid::Message::V1.new(StaticArray[127u8, 0u8, 0u8, 1u8])
+    data = Sparoid::Client.generate_package(KEYS.first, HMAC_KEYS.first, v1_msg)
+    socket = UDPSocket.new
+    socket.send data, to: ADDRESS
+    socket.close
+    Fiber.yield
+    s.@seen_nounces.size.should eq 1
+    last_ip.should eq "127.0.0.1"
+  ensure
+    s.try &.close
+  end
+
+  it "can parse v2 messages" do
+    last_ip = nil
+    cb = ->(ip : String, _family : Socket::Family) { last_ip = ip }
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS)
+    s.bind
+    spawn s.listen
+    v2_msg = Sparoid::Message::V2.from_ip(Slice[127u8, 0u8, 0u8, 1u8])
+    data = Sparoid::Client.generate_package(KEYS.first, HMAC_KEYS.first, v2_msg)
+    socket = UDPSocket.new
+    socket.send data, to: ADDRESS
+    socket.close
+    Fiber.yield
+    s.@seen_nounces.size.should eq 1
+    last_ip.should eq "127.0.0.1/32"
   ensure
     s.try &.close
   end
@@ -118,7 +154,7 @@ describe Sparoid::Server do
     spawn s.listen
     Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "127.0.0.1", address.port)
     Fiber.yield
-    s.@seen_nounces.size.should eq 2
+    s.@seen_nounces.size.should eq 1
     last_ip.should eq "127.0.0.1/32"
   ensure
     s.try &.close
