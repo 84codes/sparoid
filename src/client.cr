@@ -158,7 +158,7 @@ module Sparoid
       end
 
       # Sort messages by family to prioritize IPv4 address in case there is a rate limit on the receiver side and it can only process 1 packet / s
-      messages.sort_by! { |msg| msg.family }
+      messages.sort_by!(&.family)
       messages
     end
 
