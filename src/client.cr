@@ -145,11 +145,10 @@ module Sparoid
         messages << Message::V2.from_ip(encode_ip(ipv6.ipv6_addr), cidr)
       end
 
-      public_ips = PublicIP.by_http
-      public_ips.each do |ip_str|
-        if ipv4 = Socket::IPAddress.parse_v4_fields?(ip_str.strip)
+      PublicIP.by_http.each do |ip_str|
+        if ipv4 = Socket::IPAddress.parse_v4_fields?(ip_str)
           messages << Message::V2.from_ip(encode_ip(ipv4))
-        elsif ipv6 = Socket::IPAddress.parse_v6_fields?(ip_str.strip)
+        elsif ipv6 = Socket::IPAddress.parse_v6_fields?(ip_str)
           messages << Message::V2.from_ip(encode_ip(ipv6)) unless ipv6_native
         end
       end
