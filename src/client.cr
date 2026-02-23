@@ -115,45 +115,42 @@ module Sparoid
       STDOUT << "hmac-key = " << Random::Secure.hex(32) << "\n"
     end
 
-    private def self.slice_to_bytes(ip : Slice(UInt16) | Slice(UInt8), format : IO::ByteFormat) : Bytes
-      return ip.dup if ip.is_a?(Slice(UInt8))
-
-      buffer = IO::Memory.new(16)
-      ip.each do |segment|
-        buffer.write_bytes segment, format
+    private def self.encode_ip(ip : StaticArray) : Bytes
+      case ip
+      in StaticArray(UInt8, 4)
+        Bytes.new(4).tap do |bytes|
+          ip.each_with_index { |byte, i| bytes[i] = byte }
+        end
+      in StaticArray(UInt8, 16)
+        Bytes.new(16).tap do |bytes|
+          ip.each_with_index { |byte, i| bytes[i] = byte }
+        end
+      in StaticArray(UInt16, 8)
+        Bytes.new(16).tap do |bytes|
+          ip.each_with_index do |segment, i|
+            IO::ByteFormat::NetworkEndian.encode(segment, bytes[i * 2, 2])
+          end
+        end
       end
-
-      buffer.to_slice
     end
 
-    private def self.generate_messages(host : Socket::IPAddress, ip : StaticArray(UInt8, 4) | StaticArray(UInt8, 16)? = nil) : Array(Message::V2)
-      messages = [] of Message::V2
-      if ip
-        ip_bytes = slice_to_bytes(ip.to_slice, IO::ByteFormat::NetworkEndian)
-        messages << Message::V2.from_ip(ip_bytes)
-        return messages
-      end
+    private def self.generate_messages(host : Socket::IPAddress, public_ip : StaticArray? = nil) : Array(Message::V2)
+      return [Message::V2.from_ip(encode_ip(public_ip))] if public_ip
+      return local_ips(host).map { |ip| Message::V2.from_ip(ip) } if host.loopback? || host.unspecified?
 
-      if host.loopback? || host.unspecified?
-        ips = local_ips(host)
-        ips.each do |i|
-          messages << Message::V2.from_ip(i)
-        end
-        return messages
-      end
-
+      messages = Array(Message::V2).new
       ipv6_native = false
       IPv6.public_ipv6_with_range do |ipv6, cidr|
         ipv6_native = true
-        messages << Message::V2.from_ip(slice_to_bytes(ipv6.ipv6_addr.to_slice, IO::ByteFormat::NetworkEndian), cidr)
+        messages << Message::V2.from_ip(encode_ip(ipv6.ipv6_addr), cidr)
       end
 
       public_ips = PublicIP.by_http
       public_ips.each do |ip_str|
-        if ip = Socket::IPAddress.parse_v4_fields?(ip_str.strip)
-          messages << Message::V2.from_ip(slice_to_bytes(ip.to_slice, IO::ByteFormat::NetworkEndian))
-        elsif ip = Socket::IPAddress.parse_v6_fields?(ip_str.strip)
-          messages << Message::V2.from_ip(slice_to_bytes(ip.to_slice, IO::ByteFormat::NetworkEndian)) unless ipv6_native
+        if ipv4 = Socket::IPAddress.parse_v4_fields?(ip_str.strip)
+          messages << Message::V2.from_ip(encode_ip(ipv4))
+        elsif ipv6 = Socket::IPAddress.parse_v6_fields?(ip_str.strip)
+          messages << Message::V2.from_ip(encode_ip(ipv6)) unless ipv6_native
         end
       end
 

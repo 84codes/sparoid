@@ -129,7 +129,7 @@ module Sparoid
         end
       end
 
-      def initialize(@ip, range : UInt8? = nil)
+      def initialize(@ip : Bytes, range : UInt8? = nil)
         super(2)
         case @ip.size
         when 4
