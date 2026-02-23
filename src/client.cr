@@ -115,41 +115,22 @@ module Sparoid
       STDOUT << "hmac-key = " << Random::Secure.hex(32) << "\n"
     end
 
-    private def self.encode_ip(ip : StaticArray) : Bytes
-      case ip
-      in StaticArray(UInt8, 4)
-        Bytes.new(4).tap do |bytes|
-          ip.each_with_index { |byte, i| bytes[i] = byte }
-        end
-      in StaticArray(UInt8, 16)
-        Bytes.new(16).tap do |bytes|
-          ip.each_with_index { |byte, i| bytes[i] = byte }
-        end
-      in StaticArray(UInt16, 8)
-        Bytes.new(16).tap do |bytes|
-          ip.each_with_index do |segment, i|
-            IO::ByteFormat::NetworkEndian.encode(segment, bytes[i * 2, 2])
-          end
-        end
-      end
-    end
-
     private def self.generate_messages(host : Socket::IPAddress, public_ip : StaticArray? = nil) : Array(Message::V2)
-      return [Message::V2.from_ip(encode_ip(public_ip))] if public_ip
+      return [Message::V2.from_ip(public_ip)] if public_ip
       return local_ips(host).map { |ip| Message::V2.from_ip(ip) } if host.loopback? || host.unspecified?
 
       messages = Array(Message::V2).new
       ipv6_native = false
       IPv6.public_ipv6_with_range do |ipv6, cidr|
         ipv6_native = true
-        messages << Message::V2.from_ip(encode_ip(ipv6.ipv6_addr), cidr)
+        messages << Message::V2.from_ip(ipv6.ipv6_addr, cidr)
       end
 
       PublicIP.by_http.each do |ip_str|
         if ipv4 = Socket::IPAddress.parse_v4_fields?(ip_str)
-          messages << Message::V2.from_ip(encode_ip(ipv4))
+          messages << Message::V2.from_ip(ipv4)
         elsif ipv6 = Socket::IPAddress.parse_v6_fields?(ip_str)
-          messages << Message::V2.from_ip(encode_ip(ipv6)) unless ipv6_native
+          messages << Message::V2.from_ip(ipv6) unless ipv6_native
         end
       end
 

@@ -134,7 +134,8 @@ describe Sparoid::Message do
           0xc0_u8, 0xa8_u8, 0x01_u8, 0x01_u8,
         ]
         msg = Sparoid::Message::V2.from_ip(ip.to_slice)
-        msg.ip_string.should eq "0000:0000:0000:0000:0000:ffff:c0a8:0101/128"
+        msg.family.should eq Socket::Family::INET
+        msg.ip_string.should eq "192.168.1.1/32"
       end
 
       it "formats fe80::1 (link-local) correctly" do
