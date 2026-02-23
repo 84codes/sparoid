@@ -7,6 +7,7 @@ require "./message"
 require "./public_ip"
 require "ini"
 require "./ipv6"
+require "wait_group"
 
 module Sparoid
   class Client
@@ -35,8 +36,8 @@ module Sparoid
       self.class.send(@key, @hmac_key, host, port)
     end
 
-    def self.send(key : String, hmac_key : String, host : String, port : Int32, ip : StaticArray(UInt8, 4) | StaticArray(UInt8, 16)? = nil) : Array(String)
-      udp_send(host, port, key, hmac_key, ip).tap do
+    def self.send(key : String, hmac_key : String, host : String, port : Int32, public_ip = nil) : Array(String)
+      udp_send(host, port, key, hmac_key, public_ip).tap do
         sleep 20.milliseconds # sleep a short while to allow the receiver to parse and execute the packet
       end
     end
@@ -50,42 +51,34 @@ module Sparoid
     end
 
     def self.fdpass(ips, port) : NoReturn
-      ch = Channel(Nil).new
+      wg = WaitGroup.new
       ips.each do |ip|
-        spawn do
+        wg.spawn do
           ipaddr = Socket::IPAddress.new(ip, port)
           socket = TCPSocket.new ipaddr.family
           socket.connect(ipaddr, timeout: 10)
           FDPass.send_fd(1, socket.fd)
-          # exit as soon as possible so no other fiber also succefully connects
-          exit 0
-        rescue
-          ch.send(nil)
+          exit 0 # exit as soon as possible so no other fiber also succefully connects
         end
       end
-      ips.size.times { ch.receive }
+      wg.wait
       exit 1 # only if all connects fails
     end
 
     # Send to all resolved IPs for the hostname, prioritizing IPv6
-    private def self.udp_send(host, port, key : String, hmac_key : String, ip : StaticArray(UInt8, 4) | StaticArray(UInt8, 16)? = nil) : Array(String)
+    private def self.udp_send(host, port, key : String, hmac_key : String, public_ip = nil) : Array(String)
       host_addresses = Socket::Addrinfo.udp(host, port)
       host_addresses.each do |addrinfo|
-        packages = generate_messages(addrinfo.ip_address, ip).map { |message| generate_package(key, hmac_key, message) }
+        packages = generate_messages(addrinfo.ip_address, public_ip).map { |message| generate_package(key, hmac_key, message) }
+        socket = UDPSocket.new(addrinfo.family)
         begin
-          socket = case addrinfo.family
-                   when Socket::Family::INET6
-                     UDPSocket.new(Socket::Family::INET6)
-                   else
-                     UDPSocket.new(Socket::Family::INET)
-                   end
           packages.each do |data|
             socket.send data, to: addrinfo.ip_address
           end
         rescue ex
           STDERR << "Sparoid error sending " << ex.inspect << "\n"
         ensure
-          socket.try &.close
+          socket.close
         end
       end
       host_addresses.map &.ip_address.address
@@ -115,6 +108,9 @@ module Sparoid
       STDOUT << "hmac-key = " << Random::Secure.hex(32) << "\n"
     end
 
+    # Generate messages for all local IPs and public IPs.
+    # Look up public IPs via HTTP if public ip is not provided as an argument.
+    # If the host is loopback or unspecified, only generate for local IPs since the receiver won't be able to connect back to the public IPs.
     private def self.generate_messages(host : Socket::IPAddress, public_ip : StaticArray? = nil) : Array(Message::V2)
       return [Message::V2.from_ip(public_ip)] if public_ip
       return local_ips(host).map { |ip| Message::V2.from_ip(ip) } if host.loopback? || host.unspecified?
