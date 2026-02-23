@@ -1,4 +1,5 @@
 require "random/secure"
+require "socket"
 
 module Sparoid
   module Message
@@ -166,6 +167,16 @@ module Sparoid
           from_ip(StaticArray(UInt8, 16).new { |i| ip[i] }, range)
         else
           raise "IP must be 4 (IPv4) or 16 (IPv6) bytes, got #{ip.size}"
+        end
+      end
+
+      def self.from_ip(ip : String, range : UInt8? = nil) : V2
+        if fields = Socket::IPAddress.parse_v4_fields?(ip)
+          from_ip(fields, range)
+        elsif fields = Socket::IPAddress.parse_v6_fields?(ip)
+          from_ip(fields, range)
+        else
+          raise "Invalid IP address: #{ip}"
         end
       end
 

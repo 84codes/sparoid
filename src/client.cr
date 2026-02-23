@@ -36,7 +36,7 @@ module Sparoid
       self.class.send(@key, @hmac_key, host, port)
     end
 
-    def self.send(key : String, hmac_key : String, host : String, port : Int32, public_ip = nil) : Array(String)
+    def self.send(key : String, hmac_key : String, host : String, port : Int32, public_ip : String? = nil) : Array(String)
       udp_send(host, port, key, hmac_key, public_ip).tap do
         sleep 20.milliseconds # sleep a short while to allow the receiver to parse and execute the packet
       end
@@ -66,7 +66,7 @@ module Sparoid
     end
 
     # Send to all resolved IPs for the hostname, prioritizing IPv6
-    private def self.udp_send(host, port, key : String, hmac_key : String, public_ip = nil) : Array(String)
+    private def self.udp_send(host, port, key : String, hmac_key : String, public_ip : String? = nil) : Array(String)
       host_addresses = Socket::Addrinfo.udp(host, port)
       host_addresses.each do |addrinfo|
         packages = generate_messages(addrinfo.ip_address, public_ip).map { |message| generate_package(key, hmac_key, message) }
@@ -111,7 +111,7 @@ module Sparoid
     # Generate messages for all local IPs and public IPs.
     # Look up public IPs via HTTP if public ip is not provided as an argument.
     # If the host is loopback or unspecified, only generate for local IPs since the receiver won't be able to connect back to the public IPs.
-    private def self.generate_messages(host : Socket::IPAddress, public_ip : StaticArray? = nil) : Array(Message::V2)
+    private def self.generate_messages(host : Socket::IPAddress, public_ip : String? = nil) : Array(Message::V2)
       return [Message::V2.from_ip(public_ip)] if public_ip
       return local_ips(host).map { |ip| Message::V2.from_ip(ip) } if host.loopback? || host.unspecified?
 
@@ -123,11 +123,8 @@ module Sparoid
       end
 
       PublicIP.by_http.each do |ip_str|
-        if ipv4 = Socket::IPAddress.parse_v4_fields?(ip_str)
-          messages << Message::V2.from_ip(ipv4)
-        elsif ipv6 = Socket::IPAddress.parse_v6_fields?(ip_str)
-          messages << Message::V2.from_ip(ipv6) unless ipv6_native
-        end
+        next if ipv6_native && ip_str.includes?(':')
+        messages << Message::V2.from_ip(ip_str)
       end
 
       # Sort messages by family to prioritize IPv4 address in case there is a rate limit on the receiver side and it can only process 1 packet / s
@@ -135,18 +132,11 @@ module Sparoid
       messages
     end
 
-    private def self.local_ips(host : Socket::IPAddress) : Array(Bytes)
-      ipv4 = Slice[127u8, 0u8, 0u8, 1u8]
-      ipv6 = Slice[
-        0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
-        0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
-        0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
-        0x00_u8, 0x00_u8, 0x00_u8, 0x01_u8,
-      ]
+    private def self.local_ips(host : Socket::IPAddress) : Array(String)
       if host.family == Socket::Family::INET
-        [ipv4]
+        ["127.0.0.1"]
       else
-        [ipv6, ipv4]
+        ["::1", "127.0.0.1"]
       end
     end
   end

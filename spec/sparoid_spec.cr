@@ -101,7 +101,7 @@ describe Sparoid::Server do
     s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, address)
     s.bind
     spawn s.listen
-    Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "0.0.0.0", address.port, StaticArray[1u8, 1u8, 1u8, 1u8])
+    Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "0.0.0.0", address.port, "1.1.1.1")
     Fiber.yield
     s.@seen_nounces.size.should eq 1
     last_ip.should eq "1.1.1.1/32"

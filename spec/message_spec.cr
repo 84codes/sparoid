@@ -185,6 +185,42 @@ describe Sparoid::Message do
       end
     end
 
+    describe ".from_ip(String)" do
+      it "parses IPv4 string" do
+        msg = Sparoid::Message::V2.from_ip("192.168.1.100")
+        msg.family.should eq Socket::Family::INET
+        msg.range.should eq 32_u8
+        msg.ip_string.should eq "192.168.1.100/32"
+      end
+
+      it "parses IPv6 string" do
+        msg = Sparoid::Message::V2.from_ip("2001:0db8:85a3::8a2e:0370:7334")
+        msg.family.should eq Socket::Family::INET6
+        msg.range.should eq 128_u8
+        msg.ip_string.should eq "2001:0db8:85a3:0000:0000:8a2e:0370:7334/128"
+      end
+
+      it "parses IPv4 string with range" do
+        msg = Sparoid::Message::V2.from_ip("10.0.0.0", 24_u8)
+        msg.family.should eq Socket::Family::INET
+        msg.range.should eq 24_u8
+        msg.ip_string.should eq "10.0.0.0/24"
+      end
+
+      it "parses IPv6 string with range" do
+        msg = Sparoid::Message::V2.from_ip("2001:db8::", 48_u8)
+        msg.family.should eq Socket::Family::INET6
+        msg.range.should eq 48_u8
+        msg.ip_string.should eq "2001:0db8:0000:0000:0000:0000:0000:0000/48"
+      end
+
+      it "raises on invalid string" do
+        expect_raises(Exception, "Invalid IP address: not-an-ip") do
+          Sparoid::Message::V2.from_ip("not-an-ip")
+        end
+      end
+    end
+
     describe "serialization round-trip" do
       it "serializes and deserializes IPv4 correctly" do
         ip = StaticArray[10_u8, 20_u8, 30_u8, 40_u8]
