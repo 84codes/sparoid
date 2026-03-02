@@ -32,15 +32,11 @@ module Sparoid
       end
     end
 
-    def self.ipv4_to_string(ip : Bytes | StaticArray(UInt8, 4), range : UInt8? = nil) : String
+    def self.ipv4_to_string(ip : Bytes | StaticArray(UInt8, 4)) : String
       String.build(18) do |str|
         4.times do |i|
           str << '.' unless i == 0
           str << ip[i]
-        end
-        if range
-          str << '/'
-          str << range
         end
       end
     end
@@ -202,7 +198,7 @@ module Sparoid
 
       def ip_string : String
         if ipv4_mapped?
-          Message.ipv4_to_string(@ip.to_slice[12, 4], range)
+          Message.ipv4_to_string(@ip.to_slice[12, 4])
         else
           Message.ipv6_to_string(@ip.to_slice, @range)
         end

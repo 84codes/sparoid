@@ -57,7 +57,7 @@ describe Sparoid::Message do
         msg.version.should eq 2
         msg.family.should eq Socket::Family::INET
         msg.range.should eq 32_u8
-        msg.ip_string.should eq "192.168.1.100/32"
+        msg.ip_string.should eq "192.168.1.100"
       end
 
       it "creates message from IPv4 with custom range" do
@@ -66,7 +66,7 @@ describe Sparoid::Message do
         msg.version.should eq 2
         msg.family.should eq Socket::Family::INET
         msg.range.should eq 24_u8
-        msg.ip_string.should eq "10.0.0.0/24"
+        msg.ip_string.should eq "10.0.0.0"
       end
 
       it "creates message from full IPv6 address" do
@@ -135,7 +135,7 @@ describe Sparoid::Message do
         ]
         msg = Sparoid::Message::V2.from_ip(ip.to_slice)
         msg.family.should eq Socket::Family::INET
-        msg.ip_string.should eq "192.168.1.1/32"
+        msg.ip_string.should eq "192.168.1.1"
       end
 
       it "formats fe80::1 (link-local) correctly" do
@@ -190,7 +190,7 @@ describe Sparoid::Message do
         msg = Sparoid::Message::V2.from_ip("192.168.1.100")
         msg.family.should eq Socket::Family::INET
         msg.range.should eq 32_u8
-        msg.ip_string.should eq "192.168.1.100/32"
+        msg.ip_string.should eq "192.168.1.100"
       end
 
       it "parses IPv6 string" do
@@ -204,7 +204,7 @@ describe Sparoid::Message do
         msg = Sparoid::Message::V2.from_ip("10.0.0.0", 24_u8)
         msg.family.should eq Socket::Family::INET
         msg.range.should eq 24_u8
-        msg.ip_string.should eq "10.0.0.0/24"
+        msg.ip_string.should eq "10.0.0.0"
       end
 
       it "parses IPv6 string with range" do
@@ -235,7 +235,7 @@ describe Sparoid::Message do
         v2.version.should eq 2
         v2.family.should eq Socket::Family::INET
         v2.range.should eq 32_u8
-        v2.ip_string.should eq "10.20.30.40/32"
+        v2.ip_string.should eq "10.20.30.40"
         v2.ts.should eq original.ts
         v2.nounce.should eq original.nounce
       end
@@ -252,7 +252,7 @@ describe Sparoid::Message do
         v2 = parsed.as(Sparoid::Message::V2)
         v2.family.should eq Socket::Family::INET
         v2.range.should eq 16_u8
-        v2.ip_string.should eq "192.168.0.0/16"
+        v2.ip_string.should eq "192.168.0.0"
       end
 
       it "serializes and deserializes IPv6 correctly" do

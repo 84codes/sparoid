@@ -67,7 +67,7 @@ table inet filter {
 
   set sparoid {
     type ipv4_addr
-    flags timeout, interval
+    flags timeout
     timeout 5s
   }
 

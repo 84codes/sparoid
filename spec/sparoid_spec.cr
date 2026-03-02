@@ -16,7 +16,7 @@ describe Sparoid::Server do
     Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, ADDRESS.address, ADDRESS.port)
     Fiber.yield
     s.@seen_nounces.size.should eq 1
-    last_ip.should eq "127.0.0.1/32"
+    last_ip.should eq "127.0.0.1"
   ensure
     s.try &.close
   end
@@ -104,7 +104,7 @@ describe Sparoid::Server do
     Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "0.0.0.0", address.port, "1.1.1.1")
     Fiber.yield
     s.@seen_nounces.size.should eq 1
-    last_ip.should eq "1.1.1.1/32"
+    last_ip.should eq "1.1.1.1"
   ensure
     s.try &.close
   end
@@ -140,7 +140,25 @@ describe Sparoid::Server do
     socket.close
     Fiber.yield
     s.@seen_nounces.size.should eq 1
-    last_ip.should eq "127.0.0.1/32"
+    last_ip.should eq "127.0.0.1"
+  ensure
+    s.try &.close
+  end
+
+  it "rejects v2 IPv4 messages with non-/32 range" do
+    accepted = 0
+    cb = ->(_ip : String, _family : Socket::Family) { accepted += 1 }
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS)
+    s.bind
+    spawn s.listen
+    v2_msg = Sparoid::Message::V2.from_ip(Slice[10u8, 0u8, 0u8, 0u8], 24_u8)
+    data = Sparoid::Client.generate_package(KEYS.first, HMAC_KEYS.first, v2_msg)
+    socket = UDPSocket.new
+    socket.send data, to: ADDRESS
+    socket.close
+    Fiber.yield
+    s.@seen_nounces.size.should eq 1
+    accepted.should eq 0
   ensure
     s.try &.close
   end
@@ -155,7 +173,7 @@ describe Sparoid::Server do
     Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "127.0.0.1", address.port)
     Fiber.yield
     s.@seen_nounces.size.should eq 1
-    last_ip.should eq "127.0.0.1/32"
+    last_ip.should eq "127.0.0.1"
   ensure
     s.try &.close
   end
