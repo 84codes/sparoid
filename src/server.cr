@@ -57,7 +57,7 @@ module Sparoid
     @seen_nounces = Deque(StaticArray(UInt8, 16)).new(MAX_NOUNCES)
 
     private def verify_ip_range(msg : Message::Base)
-      if msg.family == Socket::Family::INET && msg.version == 2
+      if msg.family == Socket::Family::INET && msg.is_a?(Message::V2)
         raise "Does not support interval for IPv4 messages" unless msg.range == 32
       end
     end
