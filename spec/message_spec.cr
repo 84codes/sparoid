@@ -56,17 +56,7 @@ describe Sparoid::Message do
         msg = Sparoid::Message::V2.from_ip(ip.to_slice)
         msg.version.should eq 2
         msg.family.should eq Socket::Family::INET
-        msg.range.should eq 32_u8
         msg.ip_string.should eq "192.168.1.100"
-      end
-
-      it "creates message from IPv4 with custom range" do
-        ip = StaticArray[10_u8, 0_u8, 0_u8, 0_u8]
-        msg = Sparoid::Message::V2.from_ip(ip.to_slice, 24_u8)
-        msg.version.should eq 2
-        msg.family.should eq Socket::Family::INET
-        msg.range.should eq 24_u8
-        msg.ip_string.should eq "10.0.0.0"
       end
 
       it "creates message from full IPv6 address" do
@@ -80,21 +70,7 @@ describe Sparoid::Message do
         msg = Sparoid::Message::V2.from_ip(ip.to_slice)
         msg.version.should eq 2
         msg.family.should eq Socket::Family::INET6
-        msg.range.should eq 128_u8
-        msg.ip_string.should eq "2001:0db8:85a3:0000:0000:8a2e:0370:7334/128"
-      end
-
-      it "creates message from IPv6 with custom range" do
-        ip = StaticArray[
-          0x20_u8, 0x01_u8, 0x0d_u8, 0xb8_u8,
-          0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
-          0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
-          0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
-        ]
-        msg = Sparoid::Message::V2.from_ip(ip.to_slice, 64_u8)
-        msg.version.should eq 2
-        msg.family.should eq Socket::Family::INET6
-        msg.range.should eq 64_u8
+        msg.ip_string.should eq "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
       end
 
       it "formats ::1 (loopback) correctly" do
@@ -105,13 +81,13 @@ describe Sparoid::Message do
           0x00_u8, 0x00_u8, 0x00_u8, 0x01_u8,
         ]
         msg = Sparoid::Message::V2.from_ip(ip.to_slice)
-        msg.ip_string.should eq "0000:0000:0000:0000:0000:0000:0000:0001/128"
+        msg.ip_string.should eq "0000:0000:0000:0000:0000:0000:0000:0001"
       end
 
       it "formats :: (all zeros) correctly" do
         ip = StaticArray(UInt8, 16).new(0_u8)
         msg = Sparoid::Message::V2.from_ip(ip.to_slice)
-        msg.ip_string.should eq "0000:0000:0000:0000:0000:0000:0000:0000/128"
+        msg.ip_string.should eq "0000:0000:0000:0000:0000:0000:0000:0000"
       end
 
       it "formats 2001:db8:: correctly" do
@@ -122,11 +98,10 @@ describe Sparoid::Message do
           0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
         ]
         msg = Sparoid::Message::V2.from_ip(ip.to_slice)
-        msg.ip_string.should eq "2001:0db8:0000:0000:0000:0000:0000:0000/128"
+        msg.ip_string.should eq "2001:0db8:0000:0000:0000:0000:0000:0000"
       end
 
       it "formats ::ffff:192.168.1.1 (IPv4-mapped) correctly" do
-        # ::ffff:192.168.1.1 = 0000:0000:0000:0000:0000:ffff:c0a8:0101
         ip = StaticArray[
           0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
           0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
@@ -146,7 +121,7 @@ describe Sparoid::Message do
           0x00_u8, 0x00_u8, 0x00_u8, 0x01_u8,
         ]
         msg = Sparoid::Message::V2.from_ip(ip.to_slice)
-        msg.ip_string.should eq "fe80:0000:0000:0000:0000:0000:0000:0001/128"
+        msg.ip_string.should eq "fe80:0000:0000:0000:0000:0000:0000:0001"
       end
 
       it "formats ff02::1 (multicast) correctly" do
@@ -157,24 +132,13 @@ describe Sparoid::Message do
           0x00_u8, 0x00_u8, 0x00_u8, 0x01_u8,
         ]
         msg = Sparoid::Message::V2.from_ip(ip.to_slice)
-        msg.ip_string.should eq "ff02:0000:0000:0000:0000:0000:0000:0001/128"
-      end
-
-      it "formats 2001:db8:85a3::8a2e:370:7334 correctly" do
-        ip = StaticArray[
-          0x20_u8, 0x01_u8, 0x0d_u8, 0xb8_u8,
-          0x85_u8, 0xa3_u8, 0x00_u8, 0x00_u8,
-          0x00_u8, 0x00_u8, 0x8a_u8, 0x2e_u8,
-          0x03_u8, 0x70_u8, 0x73_u8, 0x34_u8,
-        ]
-        msg = Sparoid::Message::V2.from_ip(ip.to_slice)
-        msg.ip_string.should eq "2001:0db8:85a3:0000:0000:8a2e:0370:7334/128"
+        msg.ip_string.should eq "ff02:0000:0000:0000:0000:0000:0000:0001"
       end
 
       it "formats ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff correctly" do
         ip = StaticArray(UInt8, 16).new(0xff_u8)
         msg = Sparoid::Message::V2.from_ip(ip.to_slice)
-        msg.ip_string.should eq "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/128"
+        msg.ip_string.should eq "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"
       end
 
       it "raises on invalid IP size" do
@@ -189,29 +153,13 @@ describe Sparoid::Message do
       it "parses IPv4 string" do
         msg = Sparoid::Message::V2.from_ip("192.168.1.100")
         msg.family.should eq Socket::Family::INET
-        msg.range.should eq 32_u8
         msg.ip_string.should eq "192.168.1.100"
       end
 
       it "parses IPv6 string" do
         msg = Sparoid::Message::V2.from_ip("2001:0db8:85a3::8a2e:0370:7334")
         msg.family.should eq Socket::Family::INET6
-        msg.range.should eq 128_u8
-        msg.ip_string.should eq "2001:0db8:85a3:0000:0000:8a2e:0370:7334/128"
-      end
-
-      it "parses IPv4 string with range" do
-        msg = Sparoid::Message::V2.from_ip("10.0.0.0", 24_u8)
-        msg.family.should eq Socket::Family::INET
-        msg.range.should eq 24_u8
-        msg.ip_string.should eq "10.0.0.0"
-      end
-
-      it "parses IPv6 string with range" do
-        msg = Sparoid::Message::V2.from_ip("2001:db8::", 48_u8)
-        msg.family.should eq Socket::Family::INET6
-        msg.range.should eq 48_u8
-        msg.ip_string.should eq "2001:0db8:0000:0000:0000:0000:0000:0000/48"
+        msg.ip_string.should eq "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
       end
 
       it "raises on invalid string" do
@@ -234,25 +182,9 @@ describe Sparoid::Message do
         v2 = parsed.as(Sparoid::Message::V2)
         v2.version.should eq 2
         v2.family.should eq Socket::Family::INET
-        v2.range.should eq 32_u8
         v2.ip_string.should eq "10.20.30.40"
         v2.ts.should eq original.ts
         v2.nounce.should eq original.nounce
-      end
-
-      it "serializes and deserializes IPv4 with custom range" do
-        ip = StaticArray[192_u8, 168_u8, 0_u8, 0_u8]
-        original = Sparoid::Message::V2.from_ip(ip.to_slice, 16_u8)
-
-        slice = original.to_slice(IO::ByteFormat::NetworkEndian)
-        io = IO::Memory.new(slice)
-        parsed = Sparoid::Message.from_io(io, IO::ByteFormat::NetworkEndian)
-
-        parsed.should be_a(Sparoid::Message::V2)
-        v2 = parsed.as(Sparoid::Message::V2)
-        v2.family.should eq Socket::Family::INET
-        v2.range.should eq 16_u8
-        v2.ip_string.should eq "192.168.0.0"
       end
 
       it "serializes and deserializes IPv6 correctly" do
@@ -272,30 +204,9 @@ describe Sparoid::Message do
         v2 = parsed.as(Sparoid::Message::V2)
         v2.version.should eq 2
         v2.family.should eq Socket::Family::INET6
-        v2.range.should eq 128_u8
-        v2.ip_string.should eq "fe80:0000:0000:0000:0000:0000:0000:0001/128"
+        v2.ip_string.should eq "fe80:0000:0000:0000:0000:0000:0000:0001"
         v2.ts.should eq original.ts
         v2.nounce.should eq original.nounce
-      end
-
-      it "serializes and deserializes IPv6 with custom range" do
-        ip = StaticArray[
-          0x20_u8, 0x01_u8, 0x0d_u8, 0xb8_u8,
-          0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
-          0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
-          0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
-        ]
-        original = Sparoid::Message::V2.from_ip(ip.to_slice, 48_u8)
-
-        slice = original.to_slice(IO::ByteFormat::NetworkEndian)
-        io = IO::Memory.new(slice)
-        parsed = Sparoid::Message.from_io(io, IO::ByteFormat::NetworkEndian)
-
-        parsed.should be_a(Sparoid::Message::V2)
-        v2 = parsed.as(Sparoid::Message::V2)
-        v2.family.should eq Socket::Family::INET6
-        v2.range.should eq 48_u8
-        v2.ip_string.should eq "2001:0db8:0000:0000:0000:0000:0000:0000/48"
       end
 
       it "preserves timestamp and nonce through serialization" do
@@ -314,11 +225,9 @@ describe Sparoid::Message do
 
     describe "from_io" do
       it "raises on unknown family in stream" do
-        # Manually craft bytes with invalid family (99)
-        slice = Bytes.new(46)
+        slice = Bytes.new(45)
         IO::ByteFormat::NetworkEndian.encode(2_i32, slice[0, 4]) # version
         IO::ByteFormat::NetworkEndian.encode(0_i64, slice[4, 8]) # timestamp
-        # nounce at [12, 16] - zeros
         slice[28] = 99_u8 # invalid family
 
         io = IO::Memory.new(slice)
@@ -342,8 +251,7 @@ describe Sparoid::Message do
     end
 
     it "raises on unsupported version" do
-      # Create a fake message with version 99
-      slice = Bytes.new(46)
+      slice = Bytes.new(45)
       IO::ByteFormat::NetworkEndian.encode(99_i32, slice[0, 4])
 
       io = IO::Memory.new(slice)

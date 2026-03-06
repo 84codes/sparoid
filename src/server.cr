@@ -43,7 +43,6 @@ module Sparoid
       msg = Message.from_io(plain, IO::ByteFormat::NetworkEndian)
       verify_ts(msg.ts)
       verify_nounce(msg.nounce)
-      verify_ip_range(msg)
       ip_str = msg.ip_string
       @on_accept.call(ip_str, msg.family)
       ip_str
@@ -55,12 +54,6 @@ module Sparoid
 
     MAX_NOUNCES = 65536 # 65536 * 16 = 1MB
     @seen_nounces = Deque(StaticArray(UInt8, 16)).new(MAX_NOUNCES)
-
-    private def verify_ip_range(msg : Message::Base)
-      if msg.family == Socket::Family::INET && msg.is_a?(Message::V2)
-        raise "Does not support interval for IPv4 messages" unless msg.range == 32
-      end
-    end
 
     private def verify_nounce(nounce)
       if @seen_nounces.includes? nounce

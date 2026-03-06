@@ -41,18 +41,14 @@ module Sparoid
       end
     end
 
-    def self.ipv6_to_string(ip : Bytes, range : UInt8? = nil) : String
-      String.build(43) do |str|
+    def self.ipv6_to_string(ip : Bytes) : String
+      String.build(39) do |str|
         8.times do |i|
           str << ':' unless i == 0
           str << '0' if ip[i * 2] < 0x10
           ip[i * 2].to_s(str, 16)
           str << '0' if ip[i * 2 + 1] < 0x10
           ip[i * 2 + 1].to_s(str, 16)
-        end
-        if range
-          str << '/'
-          str << range
         end
       end
     end
@@ -99,11 +95,10 @@ module Sparoid
       end
     end
 
-    # V2 messages store IP and range in IPv6 notation.
-    # IPv4 addresses are stored as IPv4-mapped IPv6 (::ffff:x.x.x.x) with range + 96.
+    # V2 messages store IP in IPv6 notation.
+    # IPv4 addresses are stored as IPv4-mapped IPv6 (::ffff:x.x.x.x).
     struct V2 < Base
       getter ip : StaticArray(UInt8, 16)
-      @range : UInt8
 
       IPV4_PREFIX = StaticArray[0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0xff_u8, 0xff_u8]
 
@@ -111,66 +106,54 @@ module Sparoid
         ipv4_mapped? ? Socket::Family::INET : Socket::Family::INET6
       end
 
-      def range : UInt8
-        ipv4_mapped? ? @range - 96 : @range
-      end
-
       def ipv4_mapped? : Bool
         @ip.to_slice[0, 12] == IPV4_PREFIX.to_slice
       end
 
-      def initialize(@ts, @nounce, @ip, @range)
+      def initialize(@ts, @nounce, @ip)
         super(2, @ts, @nounce)
       end
 
-      def initialize(@ip, @range : UInt8)
+      def initialize(@ip)
         super(2)
       end
 
-      def self.from_ip(ip : StaticArray(UInt8, 4), range : UInt8? = nil) : V2
+      def self.from_ip(ip : StaticArray(UInt8, 4)) : V2
         sa = StaticArray(UInt8, 16).new(0_u8)
         sa[10] = 0xff_u8
         sa[11] = 0xff_u8
         ip.each_with_index { |byte, i| sa[i + 12] = byte }
-        V2.new(sa, (range || 32_u8) + 96)
+        V2.new(sa)
       end
 
-      def self.from_ip(ip : StaticArray(UInt8, 16), range : UInt8? = nil) : V2
-        if ip.to_slice[0, 12] == IPV4_PREFIX.to_slice
-          V2.new(ip, (range || 32_u8) + 96)
-        else
-          V2.new(ip, range || 128_u8)
-        end
+      def self.from_ip(ip : StaticArray(UInt8, 16)) : V2
+        V2.new(ip)
       end
 
-      def self.from_ip(ip : StaticArray(UInt16, 8), range : UInt8? = nil) : V2
+      def self.from_ip(ip : StaticArray(UInt16, 8)) : V2
         sa = StaticArray(UInt8, 16).new(0_u8)
         ip.each_with_index do |segment, i|
           IO::ByteFormat::NetworkEndian.encode(segment, sa.to_slice[i * 2, 2])
         end
-        if sa.to_slice[0, 12] == IPV4_PREFIX.to_slice
-          V2.new(sa, (range || 32_u8) + 96)
-        else
-          V2.new(sa, range || 128_u8)
-        end
+        V2.new(sa)
       end
 
-      def self.from_ip(ip : Bytes, range : UInt8? = nil) : V2
+      def self.from_ip(ip : Bytes) : V2
         case ip.size
         when 4
-          from_ip(StaticArray(UInt8, 4).new { |i| ip[i] }, range)
+          from_ip(StaticArray(UInt8, 4).new { |i| ip[i] })
         when 16
-          from_ip(StaticArray(UInt8, 16).new { |i| ip[i] }, range)
+          from_ip(StaticArray(UInt8, 16).new { |i| ip[i] })
         else
           raise "IP must be 4 (IPv4) or 16 (IPv6) bytes, got #{ip.size}"
         end
       end
 
-      def self.from_ip(ip : String, range : UInt8? = nil) : V2
+      def self.from_ip(ip : String) : V2
         if fields = Socket::IPAddress.parse_v4_fields?(ip)
-          from_ip(fields, range)
+          from_ip(fields)
         elsif fields = Socket::IPAddress.parse_v6_fields?(ip)
-          from_ip(fields, range)
+          from_ip(fields)
         else
           raise "Invalid IP address: #{ip}"
         end
@@ -182,17 +165,15 @@ module Sparoid
         io.write @nounce
         io.write_bytes 6_u8, format
         io.write @ip
-        io.write_bytes @range, format
       end
 
       def to_slice(format : IO::ByteFormat) : Bytes
-        slice = Bytes.new(46) # version (4) + timestamp (8) + nounce (16) + family (1) + ip (16) + range (1)
+        slice = Bytes.new(45) # version (4) + timestamp (8) + nounce (16) + family (1) + ip (16)
         format.encode(@version, slice[0, 4])
         format.encode(@ts, slice[4, 8])
         @nounce.to_slice.copy_to slice[12, @nounce.size]
         slice[28] = 6_u8
         @ip.to_slice.copy_to(slice[29, 16])
-        slice[45] = @range
         slice
       end
 
@@ -200,7 +181,7 @@ module Sparoid
         if ipv4_mapped?
           Message.ipv4_to_string(@ip.to_slice[12, 4])
         else
-          Message.ipv6_to_string(@ip.to_slice, @range)
+          Message.ipv6_to_string(@ip.to_slice)
         end
       end
 
@@ -214,14 +195,12 @@ module Sparoid
           io.read_fully(ip.to_slice[12, 4])
           ip[10] = 0xff_u8
           ip[11] = 0xff_u8
-          range = UInt8.from_io(io, format) + 96
         elsif family == 6_u8
           io.read_fully(ip.to_slice)
-          range = UInt8.from_io(io, format)
         else
           raise "Unknown IP family: #{family}"
         end
-        self.new(ts, nounce, ip, range)
+        self.new(ts, nounce, ip)
       end
     end
   end
