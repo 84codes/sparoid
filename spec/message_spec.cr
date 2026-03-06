@@ -228,7 +228,7 @@ describe Sparoid::Message do
         slice = Bytes.new(45)
         IO::ByteFormat::NetworkEndian.encode(2_i32, slice[0, 4]) # version
         IO::ByteFormat::NetworkEndian.encode(0_i64, slice[4, 8]) # timestamp
-        slice[28] = 99_u8 # invalid family
+        slice[28] = 99_u8                                        # invalid family
 
         io = IO::Memory.new(slice)
         expect_raises(Exception, "Unknown IP family: 99") do

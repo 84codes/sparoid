@@ -14,7 +14,7 @@ module Sparoid
     end
 
     def self.ipv6 : String?
-      by_http.find { |ip| ip.includes?(':') }
+      by_http.find(&.includes?(':'))
     end
 
     # icanhazip.com is from Cloudflare
