@@ -130,7 +130,7 @@ module Sparoid
       if host.family == Socket::Family::INET
         ["127.0.0.1"]
       else
-        ["::1", "127.0.0.1"]
+        ["::1"]
       end
     end
   end
