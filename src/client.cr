@@ -108,28 +108,22 @@ module Sparoid
       STDOUT << "hmac-key = " << Random::Secure.hex(32) << "\n"
     end
 
-    # Generate messages for all local IPs and public IPs.
-    # Look up public IPs via HTTP if public ip is not provided as an argument.
-    # If the host is loopback or unspecified, only generate for local IPs since the receiver won't be able to connect back to the public IPs.
+    # Generate messages for all public IPs (IPv4 first, server may rate-limit).
     private def self.generate_messages(host : Socket::IPAddress, public_ip : String? = nil) : Array(Message::V2)
       return [Message::V2.from_ip(public_ip)] if public_ip
       return local_ips(host).map { |ip| Message::V2.from_ip(ip) } if host.loopback? || host.unspecified?
 
-      messages = Array(Message::V2).new
-      ipv6_native = false
-      IPv6.public_ipv6_with_range do |ipv6, cidr|
-        ipv6_native = true
-        messages << Message::V2.from_ip(ipv6.ipv6_addr, cidr)
-      end
+      [public_ipv4, public_ipv6].compact.map { |ip| Message::V2.from_ip(ip) }
+    end
 
-      PublicIP.by_http.each do |ip_str|
-        next if ipv6_native && ip_str.includes?(':')
-        messages << Message::V2.from_ip(ip_str)
-      end
+    # IPv4: from icanhazip
+    private def self.public_ipv4 : String?
+      PublicIP.ipv4
+    end
 
-      # Sort messages by family to prioritize IPv4 address in case there is a rate limit on the receiver side and it can only process 1 packet / s
-      messages.sort_by!(&.family)
-      messages
+    # IPv6: prefer OS-selected outgoing address, fall back to icanhazip
+    private def self.public_ipv6 : String?
+      IPv6.public_ipv6 || PublicIP.ipv6
     end
 
     private def self.local_ips(host : Socket::IPAddress) : Array(String)

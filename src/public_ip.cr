@@ -9,6 +9,14 @@ module Sparoid
       "http://ipv4.icanhazip.com",
     }
 
+    def self.ipv4 : String?
+      by_http.find { |ip| !ip.includes?(':') }
+    end
+
+    def self.ipv6 : String?
+      by_http.find { |ip| ip.includes?(':') }
+    end
+
     # icanhazip.com is from Cloudflare
     # returns stripped IP addresses as strings, one per URL in URLS
     def self.by_http : Array(String)
