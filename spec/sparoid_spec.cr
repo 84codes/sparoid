@@ -109,32 +109,14 @@ describe Sparoid::Server do
     s.try &.close
   end
 
-  it "can parse v1 messages" do
+  it "can parse manually constructed messages" do
     last_ip = nil
     cb = ->(ip : String, _family : Socket::Family) { last_ip = ip }
     s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS)
     s.bind
     spawn s.listen
-    v1_msg = Sparoid::Message::V1.new(StaticArray[127u8, 0u8, 0u8, 1u8])
-    data = Sparoid::Client.generate_package(KEYS.first, HMAC_KEYS.first, v1_msg)
-    socket = UDPSocket.new
-    socket.send data, to: ADDRESS
-    socket.close
-    Fiber.yield
-    s.@seen_nounces.size.should eq 1
-    last_ip.should eq "127.0.0.1"
-  ensure
-    s.try &.close
-  end
-
-  it "can parse v2 messages" do
-    last_ip = nil
-    cb = ->(ip : String, _family : Socket::Family) { last_ip = ip }
-    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS)
-    s.bind
-    spawn s.listen
-    v2_msg = Sparoid::Message::V2.from_ip(Slice[127u8, 0u8, 0u8, 1u8])
-    data = Sparoid::Client.generate_package(KEYS.first, HMAC_KEYS.first, v2_msg)
+    msg = Sparoid::Message.from_ip("127.0.0.1")
+    data = Sparoid::Client.generate_package(KEYS.first, HMAC_KEYS.first, msg)
     socket = UDPSocket.new
     socket.send data, to: ADDRESS
     socket.close

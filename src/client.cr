@@ -42,7 +42,7 @@ module Sparoid
       end
     end
 
-    def self.generate_package(key, hmac_key, message : Message::Base) : Bytes
+    def self.generate_package(key, hmac_key, message : Message) : Bytes
       key = key.hexbytes
       hmac_key = hmac_key.hexbytes
       raise ArgumentError.new("Key must be 32 bytes hex encoded") if key.bytesize != 32
@@ -109,11 +109,11 @@ module Sparoid
     end
 
     # Generate messages for all public IPs (IPv4 first, server may rate-limit).
-    private def self.generate_messages(host : Socket::IPAddress, public_ip : String? = nil) : Array(Message::V2)
-      return [Message::V2.from_ip(public_ip)] if public_ip
-      return local_ips(host).map { |ip| Message::V2.from_ip(ip) } if host.loopback? || host.unspecified?
+    private def self.generate_messages(host : Socket::IPAddress, public_ip : String? = nil) : Array(Message)
+      return [Message.from_ip(public_ip)] if public_ip
+      return local_ips(host).map { |ip| Message.from_ip(ip) } if host.loopback? || host.unspecified?
 
-      [public_ipv4, public_ipv6].compact.map { |ip| Message::V2.from_ip(ip) }
+      [public_ipv4, public_ipv6].compact.map { |ip| Message.from_ip(ip) }
     end
 
     # IPv4: from icanhazip
