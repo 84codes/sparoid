@@ -56,16 +56,21 @@ module Sparoid
         wg.spawn do
           ipaddr = Socket::IPAddress.new(ip, port)
           socket = TCPSocket.new ipaddr.family
-          socket.connect(ipaddr, timeout: 10)
-          FDPass.send_fd(1, socket.fd)
-          exit 0 # exit as soon as possible so no other fiber also succefully connects
+          begin
+            socket.connect(ipaddr, timeout: 10)
+            FDPass.send_fd(1, socket.fd)
+            exit 0 # exit as soon as possible so no other fiber also successfully connects
+          rescue
+          ensure
+            socket.close
+          end
         end
       end
       wg.wait
       exit 1 # only if all connects fails
     end
 
-    # Send to all resolved IPs for the hostname, prioritizing IPv6
+    # Send to all resolved IPs for the hostname
     private def self.udp_send(host, port, key : String, hmac_key : String, public_ip : String? = nil) : Array(String)
       host_addresses = Socket::Addrinfo.udp(host, port)
       host_addresses.each do |addrinfo|

@@ -4,8 +4,8 @@ require "http/client"
 module Sparoid
   class PublicIP
     URLS = {
-      "http://ipv6.icanhazip.com",
-      "http://ipv4.icanhazip.com",
+      "https://ipv6.icanhazip.com",
+      "https://ipv4.icanhazip.com",
     }
 
     def self.ipv4 : String?
@@ -54,7 +54,8 @@ module Sparoid
         file.flock_shared
         Array(String).new.tap do |ips|
           while line = file.gets
-            ips << line
+            line = line.strip
+            ips << line unless line.empty?
           end
         end
       end
