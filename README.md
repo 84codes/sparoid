@@ -73,7 +73,7 @@ table inet filter {
 
   set sparoid6 {
     type ipv6_addr
-    flags timeout, interval
+    flags timeout
     timeout 5s
   }
 
