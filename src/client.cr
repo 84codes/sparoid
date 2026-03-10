@@ -59,7 +59,7 @@ module Sparoid
           begin
             socket.connect(ipaddr, timeout: 10)
             FDPass.send_fd(1, socket.fd)
-            exit 0 # exit as soon as possible so no other fiber also succefully connects
+            exit 0 # exit as soon as possible so no other fiber also successfully connects
           rescue
           ensure
             socket.close
