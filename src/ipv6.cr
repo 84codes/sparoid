@@ -35,6 +35,7 @@ class IPv6
     return false if segment_routing?(s)
     return false if unique_local?(s)
     return false if link_local?(s)
+    return false if multicast?(s)
     true
   end
 
@@ -96,5 +97,10 @@ class IPv6
   # fe80::/10
   private def self.link_local?(s) : Bool
     s[0] & 0xffc0 == 0xfe80
+  end
+
+  # ff00::/8
+  private def self.multicast?(s) : Bool
+    s[0] & 0xff00 == 0xff00
   end
 end
