@@ -11,8 +11,6 @@ targets:
     main: src/client-cli.cr
 
 dependencies:
-  dns:
-    gitlab: jgillich/crystal-dns
   fdpass:
     github: 84codes/fdpass.cr
 

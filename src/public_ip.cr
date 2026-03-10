@@ -1,5 +1,4 @@
 require "socket"
-require "dns"
 require "http/client"
 
 module Sparoid
