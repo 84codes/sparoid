@@ -1,3 +1,10 @@
+## [2.0.0] - 2026-03-10
+
+- IPv6 support: client detects and sends public IPv6 address to server.
+- IPv6 address detection via OS UDP connect probe, with icanhazip.com fallback
+- Comprehensive IPv6 global address validation (RFC 4291, RFC 6890)
+- Use icanhazip.com public IP lookups
+
 ## [1.2.1] - 2026-02-11
 
 - Server does not accept other message versions than 1
