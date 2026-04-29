@@ -1,3 +1,7 @@
+## [2.0.1] - 2026-04-29
+- Build for Ubuntu 26.04
+- Drops Ubuntu 20.04, Fedora 41
+
 ## [2.0.0] - 2026-03-10
 
 - IPv6 support: client detects and sends public IPv6 address to server.
