@@ -1,7 +1,7 @@
 ARG build_image
 FROM $build_image AS build-stage
 
-RUN apt-get update && apt-get install bzip2 --yes
+RUN apt-get update && apt-get install bzip2 libssl-dev --yes
 
 # build static libmnl
 WORKDIR /tmp/libmnl
