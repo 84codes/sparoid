@@ -11,6 +11,8 @@ require "wait_group"
 
 module Sparoid
   class Client
+    class SendError < Exception; end
+
     def self.new(config_path = "~/.sparoid.ini")
       key = ENV.fetch("SPAROID_KEY", "")
       hmac_key = ENV.fetch("SPAROID_HMAC_KEY", "")
@@ -70,38 +72,39 @@ module Sparoid
       exit 1 # only if all connects fails
     end
 
-    # Send to all resolved IPs for the hostname
+    # Send to all resolved IPs for the hostname.
+    # Per-address failures are logged as warnings if at least one address succeeded.
+    # If every address fails, raises SendError.
     private def self.udp_send(host, port, key : String, hmac_key : String, public_ip : String? = nil) : Array(String)
       host_addresses = Socket::Addrinfo.udp(host, port)
-      results = host_addresses.map do |addrinfo|
+      errors = [] of {Socket::IPAddress, Exception}
+      successes = 0
+      host_addresses.each do |addrinfo|
         packages = generate_messages(addrinfo.ip_address, public_ip).map { |message| generate_package(key, hmac_key, message) }
         socket = UDPSocket.new(addrinfo.family)
-        error = nil.as(Exception?)
         begin
           packages.each do |data|
             socket.send data, to: addrinfo.ip_address
           end
+          successes += 1
         rescue ex
-          error = ex
+          errors << {addrinfo.ip_address, ex}
         ensure
           socket.close
         end
-        {addrinfo.ip_address, error}
       end
-      send_errors_to_report(results).each do |ip, ex|
-        STDERR << "Sparoid error sending to " << host << " (" << ip << "): " << ex.message << "\n"
+      if successes.zero? && !errors.empty?
+        raise SendError.new(format_send_errors(host, errors))
+      end
+      errors.each do |ip, ex|
+        STDERR << "Sparoid warn: skip " << host << " (" << ip << "): " << ex.message << "\n"
       end
       host_addresses.map &.ip_address.address
     end
 
-    # Decide which UDP send errors to surface. Empty if any send succeeded — a host with both
-    # A and AAAA records on a network that only routes one family otherwise spams errors for
-    # the unreachable family even though the other family worked.
-    def self.send_errors_to_report(results : Array({Socket::IPAddress, Exception?})) : Array({Socket::IPAddress, Exception})
-      empty = [] of {Socket::IPAddress, Exception}
-      return empty if results.empty?
-      return empty if results.any? { |_, err| err.nil? }
-      results.map { |ip, err| {ip, err.not_nil!} }
+    def self.format_send_errors(host : String, errors : Array({Socket::IPAddress, Exception})) : String
+      details = errors.map { |ip, ex| "#{ip}: #{ex.message}" }.join("; ")
+      "Sparoid: failed to send to any address for #{host}: #{details}"
     end
 
     private def self.encrypt(key, hmac_key, data) : Bytes

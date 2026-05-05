@@ -144,24 +144,18 @@ describe Sparoid::Server do
 end
 
 describe Sparoid::Client do
-  describe ".send_errors_to_report" do
-    it "returns nothing when at least one send succeeded" do
-      ip = Socket::IPAddress.new("1.1.1.1", 1)
-      results = [{ip, nil.as(Exception?)}, {ip, Exception.new("boom").as(Exception?)}]
-      Sparoid::Client.send_errors_to_report(results).should be_empty
-    end
-
-    it "returns all errors when every send failed" do
+  describe ".format_send_errors" do
+    it "joins host, address and message for each error" do
       ip1 = Socket::IPAddress.new("1.1.1.1", 1)
       ip2 = Socket::IPAddress.new("2.2.2.2", 2)
-      err1 = Exception.new("a")
-      err2 = Exception.new("b")
-      results = [{ip1, err1.as(Exception?)}, {ip2, err2.as(Exception?)}]
-      Sparoid::Client.send_errors_to_report(results).should eq [{ip1, err1}, {ip2, err2}]
-    end
-
-    it "returns nothing when there were no addresses" do
-      Sparoid::Client.send_errors_to_report([] of {Socket::IPAddress, Exception?}).should be_empty
+      errors = [
+        {ip1, Exception.new("no route")},
+        {ip2, Exception.new("network down")},
+      ]
+      msg = Sparoid::Client.format_send_errors("example.com", errors)
+      msg.should contain("example.com")
+      msg.should contain("1.1.1.1:1: no route")
+      msg.should contain("2.2.2.2:2: network down")
     end
   end
 end
