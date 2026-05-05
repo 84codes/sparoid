@@ -143,24 +143,46 @@ describe Sparoid::Server do
   end
 end
 
+# Capture STDERR for the duration of the block. Uses a tempfile (not IO.pipe) to avoid
+# blocking when the pipe buffer fills with spec-runner output.
+def capture_stderr(& : -> _) : String
+  tmp = File.tempfile("sparoid_stderr")
+  real_stderr = STDERR.dup
+  STDERR.reopen(tmp)
+  begin
+    yield
+  rescue
+    # ignore — we only care about the log output
+  ensure
+    STDERR.flush
+    STDERR.reopen(real_stderr)
+  end
+  output = File.read(tmp.path)
+  tmp.delete
+  output
+end
+
 describe Sparoid::Client do
-  it "warns instead of erroring when a UDP send fails" do
-    # Sending to 0.0.0.0 reliably fails with EHOSTUNREACH/ENETUNREACH on most systems
-    # (matches the v6-no-route-on-v4-only-network case the warn wording is for).
-    tmp = File.tempfile("sparoid_stderr")
-    real_stderr = STDERR.dup
-    STDERR.reopen(tmp)
-    begin
+  it "logs an error when every UDP send fails" do
+    # Sending to 0.0.0.0 reliably fails with EHOSTUNREACH/ENETUNREACH on most systems,
+    # so every (single) addrinfo here fails — exercise the all-failed path.
+    output = capture_stderr do
       Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "0.0.0.0", 8484)
-    rescue
-      # ignore — we only care about the log output
-    ensure
-      STDERR.flush
-      STDERR.reopen(real_stderr)
     end
-    output = File.read(tmp.path)
-    tmp.delete
+    output.should match(/Sparoid error sending to 0\.0\.0\.0 \(0\.0\.0\.0:8484\):/)
+  end
+
+  it "stays silent when at least one UDP send succeeds" do
+    cb = ->(_ip : String, _family : Socket::Family) { }
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS)
+    s.bind
+    spawn s.listen
+    output = capture_stderr do
+      Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, ADDRESS.address, ADDRESS.port)
+      Fiber.yield
+    end
     output.should_not contain("Sparoid error sending")
-    output.should match(/Sparoid warn: skip 0\.0\.0\.0 \(0\.0\.0\.0:8484\):/)
+  ensure
+    s.try &.close
   end
 end

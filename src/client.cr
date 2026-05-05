@@ -73,6 +73,7 @@ module Sparoid
     # Send to all resolved IPs for the hostname
     private def self.udp_send(host, port, key : String, hmac_key : String, public_ip : String? = nil) : Array(String)
       host_addresses = Socket::Addrinfo.udp(host, port)
+      errors = [] of {Socket::IPAddress, Exception}
       host_addresses.each do |addrinfo|
         packages = generate_messages(addrinfo.ip_address, public_ip).map { |message| generate_package(key, hmac_key, message) }
         socket = UDPSocket.new(addrinfo.family)
@@ -81,12 +82,16 @@ module Sparoid
             socket.send data, to: addrinfo.ip_address
           end
         rescue ex
-          # Warn rather than error: a host with both A and AAAA records on a network without
-          # routing for one family will fail per-addr but the other family's send still works.
-          STDERR << "Sparoid warn: skip " << host << " (" << addrinfo.ip_address << "): " << ex.message << "\n"
+          errors << {addrinfo.ip_address, ex}
         ensure
           socket.close
         end
+      end
+      # Only report errors if every address failed. In mixed-family setups one family commonly
+      # fails (e.g. AAAA addr on a v4-only network) while the other succeeds — staying silent
+      # in that case avoids spamming the log for a recoverable condition.
+      if !host_addresses.empty? && errors.size == host_addresses.size
+        errors.each { |ip, ex| STDERR << "Sparoid error sending to " << host << " (" << ip << "): " << ex.message << "\n" }
       end
       host_addresses.map &.ip_address.address
     end
