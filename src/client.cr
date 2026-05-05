@@ -1,3 +1,4 @@
+require "log"
 require "socket"
 require "random/secure"
 require "openssl/cipher"
@@ -11,6 +12,8 @@ require "wait_group"
 
 module Sparoid
   class Client
+    Log = ::Log.for(self)
+
     class SendError < Exception; end
 
     def self.new(config_path = "~/.sparoid.ini")
@@ -97,7 +100,7 @@ module Sparoid
         raise SendError.new(format_send_errors(host, errors))
       end
       errors.each do |ip, ex|
-        STDERR << "Sparoid warn: skip " << host << " (" << ip << "): " << ex.message << "\n"
+        Log.warn { "skip #{host} (#{ip}): #{ex.message}" }
       end
       host_addresses.map &.ip_address.address
     end

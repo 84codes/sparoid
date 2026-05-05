@@ -1,6 +1,10 @@
+require "log"
 require "option_parser"
 require "./client"
 require "./version"
+
+# Route logs to STDERR (in :connect mode STDOUT is the unix-domain socket used for FD passing).
+Log.setup_from_env(default_level: :info, backend: Log::IOBackend.new(STDERR))
 
 subcommand = :none
 host = "0.0.0.0"
