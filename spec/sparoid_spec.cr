@@ -161,6 +161,6 @@ describe Sparoid::Client do
     output = File.read(tmp.path)
     tmp.delete
     output.should_not contain("Sparoid error sending")
-    output.should match(/Sparoid warn: skip 0\.0\.0\.0:/)
+    output.should match(/Sparoid warn: skip 0\.0\.0\.0 \(0\.0\.0\.0:8484\):/)
   end
 end

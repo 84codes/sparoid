@@ -83,7 +83,7 @@ module Sparoid
         rescue ex
           # Warn rather than error: a host with both A and AAAA records on a network without
           # routing for one family will fail per-addr but the other family's send still works.
-          STDERR << "Sparoid warn: skip " << addrinfo.ip_address << ": " << ex.message << "\n"
+          STDERR << "Sparoid warn: skip " << host << " (" << addrinfo.ip_address << "): " << ex.message << "\n"
         ensure
           socket.close
         end
