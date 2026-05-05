@@ -81,7 +81,9 @@ module Sparoid
             socket.send data, to: addrinfo.ip_address
           end
         rescue ex
-          STDERR << "Sparoid error sending " << ex.inspect << "\n"
+          # Warn rather than error: a host with both A and AAAA records on a network without
+          # routing for one family will fail per-addr but the other family's send still works.
+          STDERR << "Sparoid warn: skip " << addrinfo.ip_address << ": " << ex.message << "\n"
         ensure
           socket.close
         end

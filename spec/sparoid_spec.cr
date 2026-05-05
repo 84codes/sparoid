@@ -142,3 +142,25 @@ describe Sparoid::Server do
     s.try &.close
   end
 end
+
+describe Sparoid::Client do
+  it "warns instead of erroring when a UDP send fails" do
+    # Sending to 0.0.0.0 reliably fails with EHOSTUNREACH/ENETUNREACH on most systems
+    # (matches the v6-no-route-on-v4-only-network case the warn wording is for).
+    tmp = File.tempfile("sparoid_stderr")
+    real_stderr = STDERR.dup
+    STDERR.reopen(tmp)
+    begin
+      Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "0.0.0.0", 8484)
+    rescue
+      # ignore — we only care about the log output
+    ensure
+      STDERR.flush
+      STDERR.reopen(real_stderr)
+    end
+    output = File.read(tmp.path)
+    tmp.delete
+    output.should_not contain("Sparoid error sending")
+    output.should match(/Sparoid warn: skip 0\.0\.0\.0:/)
+  end
+end
