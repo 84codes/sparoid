@@ -73,27 +73,35 @@ module Sparoid
     # Send to all resolved IPs for the hostname
     private def self.udp_send(host, port, key : String, hmac_key : String, public_ip : String? = nil) : Array(String)
       host_addresses = Socket::Addrinfo.udp(host, port)
-      errors = [] of {Socket::IPAddress, Exception}
-      host_addresses.each do |addrinfo|
+      results = host_addresses.map do |addrinfo|
         packages = generate_messages(addrinfo.ip_address, public_ip).map { |message| generate_package(key, hmac_key, message) }
         socket = UDPSocket.new(addrinfo.family)
+        error = nil.as(Exception?)
         begin
           packages.each do |data|
             socket.send data, to: addrinfo.ip_address
           end
         rescue ex
-          errors << {addrinfo.ip_address, ex}
+          error = ex
         ensure
           socket.close
         end
+        {addrinfo.ip_address, error}
       end
-      # Only report errors if every address failed. In mixed-family setups one family commonly
-      # fails (e.g. AAAA addr on a v4-only network) while the other succeeds — staying silent
-      # in that case avoids spamming the log for a recoverable condition.
-      if !host_addresses.empty? && errors.size == host_addresses.size
-        errors.each { |ip, ex| STDERR << "Sparoid error sending to " << host << " (" << ip << "): " << ex.message << "\n" }
+      send_errors_to_report(results).each do |ip, ex|
+        STDERR << "Sparoid error sending to " << host << " (" << ip << "): " << ex.message << "\n"
       end
       host_addresses.map &.ip_address.address
+    end
+
+    # Decide which UDP send errors to surface. Empty if any send succeeded — a host with both
+    # A and AAAA records on a network that only routes one family otherwise spams errors for
+    # the unreachable family even though the other family worked.
+    def self.send_errors_to_report(results : Array({Socket::IPAddress, Exception?})) : Array({Socket::IPAddress, Exception})
+      empty = [] of {Socket::IPAddress, Exception}
+      return empty if results.empty?
+      return empty if results.any? { |_, err| err.nil? }
+      results.map { |ip, err| {ip, err.not_nil!} }
     end
 
     private def self.encrypt(key, hmac_key, data) : Bytes

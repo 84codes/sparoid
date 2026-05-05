@@ -143,46 +143,25 @@ describe Sparoid::Server do
   end
 end
 
-# Capture STDERR for the duration of the block. Uses a tempfile (not IO.pipe) to avoid
-# blocking when the pipe buffer fills with spec-runner output.
-def capture_stderr(& : -> _) : String
-  tmp = File.tempfile("sparoid_stderr")
-  real_stderr = STDERR.dup
-  STDERR.reopen(tmp)
-  begin
-    yield
-  rescue
-    # ignore — we only care about the log output
-  ensure
-    STDERR.flush
-    STDERR.reopen(real_stderr)
-  end
-  output = File.read(tmp.path)
-  tmp.delete
-  output
-end
-
 describe Sparoid::Client do
-  it "logs an error when every UDP send fails" do
-    # Sending to 0.0.0.0 reliably fails with EHOSTUNREACH/ENETUNREACH on most systems,
-    # so every (single) addrinfo here fails — exercise the all-failed path.
-    output = capture_stderr do
-      Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "0.0.0.0", 8484)
+  describe ".send_errors_to_report" do
+    it "returns nothing when at least one send succeeded" do
+      ip = Socket::IPAddress.new("1.1.1.1", 1)
+      results = [{ip, nil.as(Exception?)}, {ip, Exception.new("boom").as(Exception?)}]
+      Sparoid::Client.send_errors_to_report(results).should be_empty
     end
-    output.should match(/Sparoid error sending to 0\.0\.0\.0 \(0\.0\.0\.0:8484\):/)
-  end
 
-  it "stays silent when at least one UDP send succeeds" do
-    cb = ->(_ip : String, _family : Socket::Family) { }
-    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS)
-    s.bind
-    spawn s.listen
-    output = capture_stderr do
-      Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, ADDRESS.address, ADDRESS.port)
-      Fiber.yield
+    it "returns all errors when every send failed" do
+      ip1 = Socket::IPAddress.new("1.1.1.1", 1)
+      ip2 = Socket::IPAddress.new("2.2.2.2", 2)
+      err1 = Exception.new("a")
+      err2 = Exception.new("b")
+      results = [{ip1, err1.as(Exception?)}, {ip2, err2.as(Exception?)}]
+      Sparoid::Client.send_errors_to_report(results).should eq [{ip1, err1}, {ip2, err2}]
     end
-    output.should_not contain("Sparoid error sending")
-  ensure
-    s.try &.close
+
+    it "returns nothing when there were no addresses" do
+      Sparoid::Client.send_errors_to_report([] of {Socket::IPAddress, Exception?}).should be_empty
+    end
   end
 end
