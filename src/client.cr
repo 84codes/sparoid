@@ -1,3 +1,4 @@
+require "log"
 require "socket"
 require "random/secure"
 require "openssl/cipher"
@@ -11,6 +12,10 @@ require "wait_group"
 
 module Sparoid
   class Client
+    Log = ::Log.for(self)
+
+    class SendError < Exception; end
+
     def self.new(config_path = "~/.sparoid.ini")
       key = ENV.fetch("SPAROID_KEY", "")
       hmac_key = ENV.fetch("SPAROID_HMAC_KEY", "")
@@ -70,23 +75,41 @@ module Sparoid
       exit 1 # only if all connects fails
     end
 
-    # Send to all resolved IPs for the hostname
+    # Send to all resolved IPs for the hostname.
+    # Per-address failures are logged as warnings if at least one address succeeded.
+    # If every address fails, raises SendError.
     private def self.udp_send(host, port, key : String, hmac_key : String, public_ip : String? = nil) : Array(String)
       host_addresses = Socket::Addrinfo.udp(host, port)
-      host_addresses.each do |addrinfo|
+      results = host_addresses.map do |addrinfo|
         packages = generate_messages(addrinfo.ip_address, public_ip).map { |message| generate_package(key, hmac_key, message) }
         socket = UDPSocket.new(addrinfo.family)
+        error = nil.as(Exception?)
         begin
           packages.each do |data|
             socket.send data, to: addrinfo.ip_address
           end
         rescue ex
-          STDERR << "Sparoid error sending " << ex.inspect << "\n"
+          error = ex
         ensure
           socket.close
         end
+        {addrinfo.ip_address, error}
+      end
+      process_send_results(host, results).each do |ip, ex|
+        Log.warn { "skip #{host} (#{ip}): #{ex.message}" }
       end
       host_addresses.map &.ip_address.address
+    end
+
+    # Decide whether per-address send failures are partial (warn) or total (raise).
+    # Returns the per-address errors to warn about. Raises SendError when every send failed.
+    def self.process_send_results(host : String, results : Array({Socket::IPAddress, Exception?})) : Array({Socket::IPAddress, Exception})
+      errors = results.compact_map { |ip, err| err.try { |e| {ip, e} } }
+      if !results.empty? && errors.size == results.size
+        details = errors.map { |ip, ex| "#{ip}: #{ex.message}" }.join("; ")
+        raise SendError.new("failed to send to any address for #{host}: #{details}")
+      end
+      errors
     end
 
     private def self.encrypt(key, hmac_key, data) : Bytes
