@@ -144,18 +144,41 @@ describe Sparoid::Server do
 end
 
 describe Sparoid::Client do
-  describe ".format_send_errors" do
-    it "joins host, address and message for each error" do
+  describe ".process_send_results" do
+    it "raises SendError when every send failed" do
       ip1 = Socket::IPAddress.new("1.1.1.1", 1)
       ip2 = Socket::IPAddress.new("2.2.2.2", 2)
-      errors = [
-        {ip1, Exception.new("no route")},
-        {ip2, Exception.new("network down")},
+      results = [
+        {ip1, Exception.new("no route").as(Exception?)},
+        {ip2, Exception.new("network down").as(Exception?)},
       ]
-      msg = Sparoid::Client.format_send_errors("example.com", errors)
-      msg.should contain("example.com")
-      msg.should contain("1.1.1.1:1: no route")
-      msg.should contain("2.2.2.2:2: network down")
+      ex = expect_raises(Sparoid::Client::SendError) do
+        Sparoid::Client.process_send_results("example.com", results)
+      end
+      ex.message.to_s.should contain("example.com")
+      ex.message.to_s.should contain("1.1.1.1:1: no route")
+      ex.message.to_s.should contain("2.2.2.2:2: network down")
+    end
+
+    it "returns partial-failure errors when at least one send succeeded" do
+      ip1 = Socket::IPAddress.new("1.1.1.1", 1)
+      ip2 = Socket::IPAddress.new("2.2.2.2", 2)
+      err = Exception.new("oops")
+      results = [
+        {ip1, nil.as(Exception?)},
+        {ip2, err.as(Exception?)},
+      ]
+      Sparoid::Client.process_send_results("example.com", results).should eq [{ip2, err}]
+    end
+
+    it "returns nothing when all sends succeeded" do
+      ip = Socket::IPAddress.new("1.1.1.1", 1)
+      results = [{ip, nil.as(Exception?)}]
+      Sparoid::Client.process_send_results("example.com", results).should be_empty
+    end
+
+    it "returns nothing when there were no addresses" do
+      Sparoid::Client.process_send_results("example.com", [] of {Socket::IPAddress, Exception?}).should be_empty
     end
   end
 end
