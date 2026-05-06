@@ -1,3 +1,8 @@
+## [2.0.2] - 2026-05-06
+- Client: warn (instead of error) on per-address UDP send failures when at least one address succeeds, so dual-stack hosts on single-family networks no longer log catastrophically
+- Client: raise `Sparoid::Client::SendError` when every address fails, surfacing a clear actionable failure
+- Client: partial-failure warnings now go through `Log.warn` (source `Sparoid::Client`) instead of raw STDERR
+
 ## [2.0.1] - 2026-04-29
 - Build for Ubuntu 26.04
 - Drops Ubuntu 20.04, Fedora 41
