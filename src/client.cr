@@ -31,7 +31,7 @@ module Sparoid
           end
         end
       end
-      self.new(key, hmac_key)
+      new(key, hmac_key)
     end
 
     def initialize(@key : String, @hmac_key : String)
