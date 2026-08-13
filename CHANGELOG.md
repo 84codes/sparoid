@@ -1,3 +1,8 @@
+## [2.0.3] - 2026-08-13
+- Fix `sparoid-server` segfault on Ubuntu 26.04: the deb no longer statically bundles nftables 1.0.5 / libnftnl 1.2.3 / libmnl 1.0.5, but links against the distribution's libnftables so the linked library matches the nftables installed on the host
+- Deb now depends on `libnftables1`, picked up automatically by `dpkg-shlibdeps`
+- CI: unbreak the Lint/Ameba job, which failed to build ameba against current Crystal
+
 ## [2.0.2] - 2026-05-06
 - Client: warn (instead of error) on per-address UDP send failures when at least one address succeeds, so dual-stack hosts on single-family networks no longer log catastrophically
 - Client: raise `Sparoid::Client::SendError` when every address fails, surfacing a clear actionable failure
