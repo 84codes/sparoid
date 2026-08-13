@@ -37,8 +37,10 @@ jobs:
         uses: actions/checkout@v4
       - name: Shards install
         run: shards install
-      - name: Spec
-        run: bin/ameba --no-color
+      - name: Build ameba
+        run: cd lib/ameba && shards build ameba
+      - name: Ameba
+        run: lib/ameba/bin/ameba --no-color
   docker:
     name: Docker container
     needs: [spec, format, lint]
