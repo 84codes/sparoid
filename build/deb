@@ -34,7 +34,7 @@ hmac-key  = 000000000000000000000000000000000000000000000000000000000000000000
 open-cmd  = iptables -I INPUT -p tcp --dport 22 -s %s -j ACCEPT
 close-cmd = iptables -D INPUT -p tcp --dport 22 -s %s -j ACCEPT
 EOF
-chmod 650 etc/sparoid.ini
+chmod 600 etc/sparoid.ini
 
 cat > usr/share/doc/sparoid/copyright << EOF
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
