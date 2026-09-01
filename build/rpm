@@ -37,7 +37,7 @@ shards build --production --release --link-flags=-pie -Dgc_none sparoid
 install -D -m 0755 bin/%{name} %{buildroot}/%{_bindir}/%{name}
 install -D -m 0755 bin/%{name}-server %{buildroot}/%{_sbindir}/%{name}-server
 install -D -m 0644 extras/%{name}-server.service %{buildroot}/%{_unitdir}/%{name}-server.service
-install -D -m 0644 extras/%{name}.ini %{buildroot}/%{_sysconfdir}/%{name}.ini
+install -D -m 0600 extras/%{name}.ini %{buildroot}/%{_sysconfdir}/%{name}.ini
 
 %post
 %systemd_post %{name}.service
