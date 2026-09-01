@@ -1,3 +1,6 @@
+## [2.0.4] - 2026-09-01
+- Deb and RPM: ship `/etc/sparoid.ini` as 0600, since it holds the key and hmac-key (existing installs keep their current mode on upgrade)
+
 ## [2.0.3] - 2026-08-13
 - Fix `sparoid-server` segfault on Ubuntu 26.04: the deb no longer statically bundles nftables 1.0.5 / libnftnl 1.2.3 / libmnl 1.0.5, but links against the distribution's libnftables so the linked library matches the nftables installed on the host
 - Deb now depends on `libnftables1`, picked up automatically by `dpkg-shlibdeps`
