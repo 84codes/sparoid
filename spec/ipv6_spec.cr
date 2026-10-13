@@ -77,4 +77,11 @@ describe IPv6 do
       IPv6.global?("not-an-ip").should be_false
     end
   end
+
+  describe ".public_ipv6" do
+    it "returns nil when the kernel has no IPv6" do
+      pending!("the kernel has IPv6") if File.exists?("/proc/net/if_inet6")
+      IPv6.public_ipv6.should be_nil
+    end
+  end
 end

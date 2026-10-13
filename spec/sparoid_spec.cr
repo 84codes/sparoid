@@ -181,4 +181,13 @@ describe Sparoid::Client do
       Sparoid::Client.process_send_results("example.com", [] of {Socket::IPAddress, Exception?}).should be_empty
     end
   end
+
+  describe ".send" do
+    it "fails per address, with SendError, for IPv6 addresses when the kernel has no IPv6" do
+      pending!("the kernel has IPv6") if File.exists?("/proc/net/if_inet6")
+      expect_raises(Sparoid::Client::SendError, /::1/) do
+        Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, "::1", ADDRESS.port)
+      end
+    end
+  end
 end

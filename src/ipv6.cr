@@ -5,18 +5,17 @@ class IPv6
 
   # Get the public IPv6 address by asking the OS which source address
   # it would use to reach a well-known IPv6 destination.
-  # Returns nil if no global IPv6 address is available.
+  # Returns nil if no global IPv6 address is available, also when the kernel
+  # has no IPv6 at all (e.g. booted with ipv6.disable=1).
   def self.public_ipv6 : String?
     socket = UDPSocket.new(Socket::Family::INET6)
-    begin
-      socket.connect(GOOGLE_DNS)
-      addr = socket.local_address
-      return addr.address if global?(addr.address)
-    rescue
-    ensure
-      socket.close
-    end
+    socket.connect(GOOGLE_DNS)
+    addr = socket.local_address
+    addr.address if global?(addr.address)
+  rescue
     nil
+  ensure
+    socket.try &.close
   end
 
   # Check if an IPv6 address is globally reachable.

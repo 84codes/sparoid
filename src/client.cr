@@ -60,14 +60,14 @@ module Sparoid
       ips.each do |ip|
         wg.spawn do
           ipaddr = Socket::IPAddress.new(ip, port)
-          socket = TCPSocket.new ipaddr.family
           begin
+            socket = TCPSocket.new ipaddr.family
             socket.connect(ipaddr, timeout: 10)
             FDPass.send_fd(1, socket.fd)
             exit 0 # exit as soon as possible so no other fiber also successfully connects
           rescue
           ensure
-            socket.close
+            socket.try &.close
           end
         end
       end
@@ -82,16 +82,17 @@ module Sparoid
       host_addresses = Socket::Addrinfo.udp(host, port)
       results = host_addresses.map do |addrinfo|
         packages = generate_messages(addrinfo.ip_address, public_ip).map { |message| generate_package(key, hmac_key, message) }
-        socket = UDPSocket.new(addrinfo.family)
         error = nil.as(Exception?)
         begin
+          # Also fails per address, for IPv6 addresses when the kernel has no IPv6
+          socket = UDPSocket.new(addrinfo.family)
           packages.each do |data|
             socket.send data, to: addrinfo.ip_address
           end
         rescue ex
           error = ex
         ensure
-          socket.close
+          socket.try &.close
         end
         {addrinfo.ip_address, error}
       end

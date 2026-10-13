@@ -1,3 +1,6 @@
+## [Unreleased]
+- Client: don't fail on kernels without IPv6 (e.g. booted with `ipv6.disable=1`). The public IPv6 lookup returns nil, and IPv6 addresses fail per address, like other send failures, instead of the whole knock failing with "Failed to create socket: Address family not supported by protocol"
+
 ## [2.0.4] - 2026-09-01
 - Deb and RPM: ship `/etc/sparoid.ini` as 0600, since it holds the key and hmac-key (existing installs keep their current mode on upgrade)
 
