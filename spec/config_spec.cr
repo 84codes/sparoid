@@ -97,6 +97,19 @@ describe Sparoid::Config do
     end
   end
 
+  it "refuses a top level with a command but no keys" do
+    expect_raises(Sparoid::Config::Error, "Profile 'default' has no key") do
+      config <<-INI
+        bind = ::
+        nftables-cmd = add element inet filter sparoid { %s }
+        [postgres]
+        key = cc
+        hmac-key = dd
+        nftables-cmd = add element inet filter sparoid_pg { %s }
+        INI
+    end
+  end
+
   it "refuses bind and port inside a section" do
     expect_raises(Sparoid::Config::Error, "'port' is not allowed in section [postgres]") do
       config <<-INI

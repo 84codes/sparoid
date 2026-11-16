@@ -94,8 +94,9 @@ module Sparoid
       @profiles.clear
       INI.parse(io).each do |section, values|
         profile = Profile.new(section)
+        has_profile_settings = false
         values.each do |k, v|
-          next if profile.set?(k, v)
+          next has_profile_settings = true if profile.set?(k, v)
           case k
           when "bind", "port"
             raise Error.new("'#{k}' is not allowed in section [#{section}], set it at the top of the file") unless section.empty?
@@ -106,8 +107,9 @@ module Sparoid
             end
           end
         end
-        # the top level is only a profile if it has more than bind/port
-        next if section.empty? && profile.keys.empty? && profile.hmac_keys.empty?
+        # the top level is only a profile if it has more than bind/port,
+        # a partial one (eg. a command but no keys) is an error, not ignored
+        next if section.empty? && !has_profile_settings
         profile.validate!
         @profiles << profile
       end
