@@ -89,6 +89,36 @@ EOF
 systemctl restart nftables.service sparoid.service
 ```
 
+#### Different keys for different services
+
+Each `[section]` in the config file is a profile with its own keys and its own command, so that one sparoid server can open up for different services depending on which key the packet was sent with. The settings at the top of the file, before any section, are the default profile. A client that only has the `postgres` keys below can open port 5432, but not SSH.
+
+```ini
+bind = ::
+port = 8484
+key = $SPAROID_KEY
+hmac-key = $SPAROID_HMAC_KEY
+nftables-cmd = add element inet filter sparoid { %s }
+nftablesv6-cmd = add element inet filter sparoid6 { %s }
+
+[postgres]
+key = $SPAROID_PG_KEY
+hmac-key = $SPAROID_PG_HMAC_KEY
+nftables-cmd = add element inet filter sparoid_pg { %s }
+nftablesv6-cmd = add element inet filter sparoid_pg6 { %s }
+```
+
+With a matching set and rule per service in `nftables.conf`:
+
+```
+ip saddr @sparoid tcp dport ssh accept
+ip6 saddr @sparoid6 tcp dport ssh accept
+ip saddr @sparoid_pg tcp dport 5432 accept
+ip6 saddr @sparoid_pg6 tcp dport 5432 accept
+```
+
+The profile is selected by the HMAC key, so every HMAC key has to be unique, and a profile must have a `key`, a `hmac-key` and a command. `bind` and `port` can only be set at the top of the file. Several profiles can use the same command, which is how you give two sets of keys access to the same service, or rotate keys. Nothing changes for the client, it just uses the keys of the service it should reach (`sparoid send --config ~/.sparoid-pg.ini`, or `SPAROID_KEY`/`SPAROID_HMAC_KEY`).
+
 With iptables:
 
 ```sh
