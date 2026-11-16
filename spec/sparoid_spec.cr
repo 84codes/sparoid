@@ -184,7 +184,7 @@ describe Sparoid::Server do
       s.try &.close
     end
 
-    it "rejects a replayed packet across profiles" do
+    it "rejects a replayed packet when several profiles are configured" do
       accepted = 0
       cb = ->(_ip : String, _family : Socket::Family) { accepted += 1; nil }
       profiles = [

@@ -117,7 +117,7 @@ ip saddr @sparoid_pg tcp dport 5432 accept
 ip6 saddr @sparoid_pg6 tcp dport 5432 accept
 ```
 
-The profile is selected by the HMAC key, so every HMAC key has to be unique, and a profile must have a `key`, a `hmac-key` and a command. `bind` and `port` can only be set at the top of the file. Several profiles can use the same command, which is how you give two sets of keys access to the same service, or rotate keys. Nothing changes for the client, it just uses the keys of the service it should reach (`sparoid send --config ~/.sparoid-pg.ini`, or `SPAROID_KEY`/`SPAROID_HMAC_KEY`).
+The profile is selected by the HMAC key, so every HMAC key has to be unique, and a profile must have a `key`, a `hmac-key` and a command. `bind` and `port` can only be set at the top of the file, and `default` can't be used as a section name since it's what the top of the file is called in log messages. Several profiles can use the same command, which is how you give two sets of keys access to the same service, or rotate keys. Nothing changes for the client, it just uses the keys of the service it should reach (`sparoid send --config ~/.sparoid-pg.ini`, or `SPAROID_KEY`/`SPAROID_HMAC_KEY`).
 
 With iptables:
 

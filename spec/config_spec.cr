@@ -110,6 +110,17 @@ describe Sparoid::Config do
     end
   end
 
+  it "refuses a [default] section, it is the name of the top level" do
+    expect_raises(Sparoid::Config::Error, "Section [Default] is reserved") do
+      config <<-INI
+        [Default]
+        key = cc
+        hmac-key = dd
+        open-cmd = open %s
+        INI
+    end
+  end
+
   it "refuses bind and port inside a section" do
     expect_raises(Sparoid::Config::Error, "'port' is not allowed in section [postgres]") do
       config <<-INI

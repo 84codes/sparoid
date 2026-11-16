@@ -93,6 +93,9 @@ module Sparoid
     private def parse_config(io : IO)
       @profiles.clear
       INI.parse(io).each do |section, values|
+        if section.downcase == "default"
+          raise Error.new("Section [#{section}] is reserved, put the default profile's settings at the top of the file")
+        end
         profile = Profile.new(section)
         has_profile_settings = false
         values.each do |k, v|
