@@ -2,6 +2,7 @@
 - Server: profiles, each `[section]` in the config file has its own keys and its own command, so that different keys can open up for different services (eg. SSH and PostgreSQL). The profile is selected by the HMAC key that authenticates the packet. Config files without sections work as before
 - Server: refuses to start if a profile lacks a key, a hmac-key or a command, if no keys are configured at all, or if the same HMAC key is used in more than one profile
 - Server: the accept log line includes `profile=<name>` for named profiles
+- Drops Debian 11, it is out of support (LTS ended 2026-08-31) and its packages can no longer be built
 
 ## [2.0.4] - 2026-09-01
 - Deb and RPM: ship `/etc/sparoid.ini` as 0600, since it holds the key and hmac-key (existing installs keep their current mode on upgrade)
