@@ -211,6 +211,18 @@ describe Sparoid::Server do
       end
     end
   end
+
+  it "rejects a packet with a tampered HMAC" do
+    accepted = 0
+    cb = ->(_ip : String, _family : Socket::Family) { accepted += 1; nil }
+    s = Sparoid::Server.new(KEYS, HMAC_KEYS, cb, ADDRESS)
+    data = Sparoid::Client.generate_package(KEYS.first, HMAC_KEYS.first, Sparoid::Message.from_ip("127.0.0.1"))
+    data[31] ^= 1
+    expect_raises(Exception, "HMAC didn't match") { s.process_packet(data, data.size) }
+    accepted.should eq 0
+  ensure
+    s.try &.close
+  end
 end
 
 describe Sparoid::Client do

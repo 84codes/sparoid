@@ -1,6 +1,7 @@
 require "socket"
 require "openssl/cipher"
 require "openssl/hmac"
+require "crypto/subtle"
 require "./message"
 
 module Sparoid
@@ -113,7 +114,7 @@ module Sparoid
       data += 32
       @profiles.each do |profile|
         profile.hmac_keys.each do |hmac_key|
-          return {data, profile} if hmac_digest(hmac_key, data) == packet_mac
+          return {data, profile} if Crypto::Subtle.constant_time_compare(hmac_digest(hmac_key, data), packet_mac)
         end
       end
       raise "HMAC didn't match"
