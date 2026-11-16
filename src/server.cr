@@ -18,8 +18,8 @@ module Sparoid
       getter on_accept : AcceptProc
 
       def initialize(@name : String, keys : Enumerable(String), hmac_keys : Enumerable(String), @on_accept : AcceptProc)
-        @keys = keys.map(&.hexbytes).to_a
-        @hmac_keys = hmac_keys.map(&.hexbytes).to_a
+        @keys = keys.map { |k| k.hexbytes? || raise ArgumentError.new("Key must be 32 bytes hex encoded") }.to_a
+        @hmac_keys = hmac_keys.map { |k| k.hexbytes? || raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") }.to_a
         raise ArgumentError.new("Key must be 32 bytes hex encoded") if @keys.any? { |k| k.bytesize != 32 }
         raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") if @hmac_keys.any? { |k| k.bytesize != 32 }
       end
