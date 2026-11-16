@@ -48,8 +48,8 @@ module Sparoid
     end
 
     def self.generate_package(key, hmac_key, message : Message) : Bytes
-      key = key.hexbytes
-      hmac_key = hmac_key.hexbytes
+      key = key.hexbytes? || raise ArgumentError.new("Key must be 32 bytes hex encoded")
+      hmac_key = hmac_key.hexbytes? || raise ArgumentError.new("HMAC key must be 32 bytes hex encoded")
       raise ArgumentError.new("Key must be 32 bytes hex encoded") if key.bytesize != 32
       raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") if hmac_key.bytesize != 32
       encrypt(key, hmac_key, message.to_slice(IO::ByteFormat::NetworkEndian))

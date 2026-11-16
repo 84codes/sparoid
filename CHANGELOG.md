@@ -3,6 +3,7 @@
 - Server: refuses to start if a profile lacks a key, a hmac-key or a command, if no keys are configured at all, or if the same HMAC key is used in more than one profile
 - Server: the accept log line includes `profile=<name>` for named profiles
 - Server: the HMAC of a packet is compared in constant time
+- A malformed `key` or `hmac-key` is no longer printed in the error message, neither by the server nor the client
 - Drops Debian 11, it is out of support (LTS ended 2026-08-31) and its packages can no longer be built
 
 ## [2.0.4] - 2026-09-01

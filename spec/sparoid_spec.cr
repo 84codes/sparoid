@@ -212,6 +212,19 @@ describe Sparoid::Server do
     end
   end
 
+  it "doesn't include a malformed key in the error" do
+    cb = ->(_ip : String, _family : Socket::Family) { }
+    bad = "not-a-hex-key-#{Random::Secure.hex(8)}"
+    ex = expect_raises(ArgumentError, "Key must be 32 bytes hex encoded") do
+      Sparoid::Server.new([bad], HMAC_KEYS, cb, ADDRESS)
+    end
+    ex.message.to_s.should_not contain bad
+    ex = expect_raises(ArgumentError, "HMAC key must be 32 bytes hex encoded") do
+      Sparoid::Server.new(KEYS, [bad], cb, ADDRESS)
+    end
+    ex.message.to_s.should_not contain bad
+  end
+
   it "rejects a packet with a tampered HMAC" do
     accepted = 0
     cb = ->(_ip : String, _family : Socket::Family) { accepted += 1; nil }
@@ -226,6 +239,14 @@ describe Sparoid::Server do
 end
 
 describe Sparoid::Client do
+  it "doesn't include a malformed key in the error" do
+    bad = "not-a-hex-key-#{Random::Secure.hex(8)}"
+    ex = expect_raises(ArgumentError, "Key must be 32 bytes hex encoded") do
+      Sparoid::Client.generate_package(bad, HMAC_KEYS.first, Sparoid::Message.from_ip("127.0.0.1"))
+    end
+    ex.message.to_s.should_not contain bad
+  end
+
   describe ".process_send_results" do
     it "raises SendError when every send failed" do
       ip1 = Socket::IPAddress.new("1.1.1.1", 1)
