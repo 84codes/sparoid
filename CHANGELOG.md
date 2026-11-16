@@ -1,3 +1,6 @@
+## [Unreleased]
+- Drops Debian 11, it is out of support (LTS ended 2026-08-31) and its packages can no longer be built
+
 ## [2.0.4] - 2026-09-01
 - Deb and RPM: ship `/etc/sparoid.ini` as 0600, since it holds the key and hmac-key (existing installs keep their current mode on upgrade)
 
