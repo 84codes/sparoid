@@ -5,15 +5,44 @@ require "./message"
 
 module Sparoid
   class Server
-    @keys : Array(Bytes)
-    @hmac_keys : Array(Bytes)
+    alias AcceptProc = Proc(String, Socket::Family, Nil)
 
-    def initialize(keys : Enumerable(String), hmac_keys : Enumerable(String), @on_accept : Proc(String, Socket::Family, Nil), @address : Socket::IPAddress)
-      @keys = keys.map &.hexbytes
-      @hmac_keys = hmac_keys.map &.hexbytes
-      raise ArgumentError.new("Key must be 32 bytes hex encoded") if @keys.any? { |k| k.bytesize != 32 }
-      raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") if @hmac_keys.any? { |k| k.bytesize != 32 }
+    # A set of keys and the action to run when a packet is authenticated by one of them.
+    # Which profile a packet belongs to is decided by which HMAC key authenticates it,
+    # so that different keys can open up for different services.
+    class Profile
+      getter name : String
+      getter keys : Array(Bytes)
+      getter hmac_keys : Array(Bytes)
+      getter on_accept : AcceptProc
+
+      def initialize(@name : String, keys : Enumerable(String), hmac_keys : Enumerable(String), @on_accept : AcceptProc)
+        @keys = keys.map(&.hexbytes).to_a
+        @hmac_keys = hmac_keys.map(&.hexbytes).to_a
+        raise ArgumentError.new("Key must be 32 bytes hex encoded") if @keys.any? { |k| k.bytesize != 32 }
+        raise ArgumentError.new("HMAC key must be 32 bytes hex encoded") if @hmac_keys.any? { |k| k.bytesize != 32 }
+      end
+
+      def to_s(io : IO) : Nil
+        io << (@name.empty? ? "default" : @name)
+      end
+    end
+
+    @profiles : Array(Profile)
+
+    def initialize(profiles : Enumerable(Profile), @address : Socket::IPAddress)
+      @profiles = profiles.to_a
+      seen = Set(Bytes).new
+      @profiles.each do |profile|
+        profile.hmac_keys.each do |hmac_key|
+          seen.add?(hmac_key) || raise ArgumentError.new("HMAC key used more than once, each HMAC key must be unique (profile '#{profile}')")
+        end
+      end
       @socket = UDPSocket.new(@address.family)
+    end
+
+    def self.new(keys : Enumerable(String), hmac_keys : Enumerable(String), on_accept : AcceptProc, address : Socket::IPAddress)
+      new({Profile.new("", keys, hmac_keys, on_accept)}, address)
     end
 
     def bind
@@ -26,8 +55,11 @@ module Sparoid
       loop do
         count, client_addr = socket.receive(packet)
         begin
-          ip_str = process_packet(packet, count)
-          puts "#{client_addr} packet accepted #{ip_str != client_addr.address ? "ip=#{ip_str}" : ""}"
+          ip_str, profile = authenticate_and_accept(packet, count)
+          log = "#{client_addr} packet accepted"
+          log += " profile=#{profile}" unless profile.name.empty?
+          log += " ip=#{ip_str}" if ip_str != client_addr.address
+          puts log
         rescue ex
           puts "#{client_addr} ERROR: #{ex.message}"
         end
@@ -37,15 +69,19 @@ module Sparoid
     end
 
     def process_packet(packet : Bytes, count : Int) : String
+      authenticate_and_accept(packet, count).first
+    end
+
+    private def authenticate_and_accept(packet : Bytes, count : Int) : {String, Profile}
       raise "Expected UDP packet to be 96 bytes, got #{count} bytes" if count != 96
-      encrypted = verify_packet(packet)
-      plain = decrypt(encrypted)
+      encrypted, profile = verify_packet(packet)
+      plain = decrypt(encrypted, profile)
       msg = Message.from_io(plain, IO::ByteFormat::NetworkEndian)
       verify_ts(msg.ts)
       verify_nounce(msg.nounce)
       ip_str = msg.ip_string
-      @on_accept.call(ip_str, msg.family)
-      ip_str
+      profile.on_accept.call(ip_str, msg.family)
+      {ip_str, profile}
     end
 
     def close
@@ -71,24 +107,27 @@ module Sparoid
       end
     end
 
-    private def verify_packet(data : Bytes) : Bytes
+    # Returns the encrypted payload and the profile whose HMAC key authenticated the packet
+    private def verify_packet(data : Bytes) : {Bytes, Profile}
       packet_mac = data[0, 32]
       data += 32
-      @hmac_keys.any? do |hmac_key|
-        hmac_digest(hmac_key, data) == packet_mac
-      end || raise "HMAC didn't match"
-      data
+      @profiles.each do |profile|
+        profile.hmac_keys.each do |hmac_key|
+          return {data, profile} if hmac_digest(hmac_key, data) == packet_mac
+        end
+      end
+      raise "HMAC didn't match"
     end
 
     @cipher = OpenSSL::Cipher.new("aes-256-cbc")
     @io = IO::Memory.new(32)
 
-    private def decrypt(data : Bytes) : IO::Memory
+    private def decrypt(data : Bytes, profile : Profile) : IO::Memory
       @cipher.reset
       @cipher.decrypt
       @cipher.iv = data[0, @cipher.iv_len]
       data += @cipher.iv_len
-      @keys.each do |key|
+      profile.keys.each do |key|
         @cipher.key = key
         @io.clear
         @io.write @cipher.update(data)

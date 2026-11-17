@@ -4,19 +4,69 @@ require "./version"
 
 module Sparoid
   class Config
-    getter keys = Array(String).new
-    getter hmac_keys = Array(String).new
+    class Error < Exception; end
+
+    # Keys and the commands to run when a packet is authenticated by one of them.
+    # The top level of the config file is the unnamed default profile,
+    # each [section] is a named profile.
+    class Profile
+      getter name : String
+      getter keys = Array(String).new
+      getter hmac_keys = Array(String).new
+      property open_cmd = ""
+      property close_cmd = ""
+      property nftables_cmd = ""
+      property nftablesv6_cmd = ""
+
+      def initialize(@name : String)
+      end
+
+      def nftables? : Bool
+        !@nftables_cmd.empty? || !@nftablesv6_cmd.empty?
+      end
+
+      def to_s(io : IO) : Nil
+        io << (@name.empty? ? "default" : @name)
+      end
+
+      protected def validate! : Nil
+        raise Error.new("Profile '#{self}' has no key") if @keys.empty?
+        raise Error.new("Profile '#{self}' has no hmac-key") if @hmac_keys.empty?
+        if !nftables? && @open_cmd.empty?
+          raise Error.new("Profile '#{self}' has no nftables-cmd, nftablesv6-cmd or open-cmd")
+        end
+      end
+
+      # Set a profile setting, returns false if the key isn't a profile setting
+      protected def set?(key : String, value : String) : Bool
+        case key
+        when "key"            then @keys << value
+        when "hmac-key"       then @hmac_keys << value
+        when "open-cmd"       then @open_cmd = value
+        when "close-cmd"      then @close_cmd = value
+        when "nftables-cmd"   then @nftables_cmd = value
+        when "nftablesv6-cmd" then @nftablesv6_cmd = value
+        else                       return false
+        end
+        true
+      end
+    end
+
+    getter profiles = Array(Profile).new
     getter host = "127.0.0.1"
     getter port = 8484
-    getter open_cmd = ""
-    getter close_cmd = ""
     getter config_file = "/etc/sparoid.ini"
-    getter nftables_cmd = ""
-    getter nftablesv6_cmd = ""
 
     def initialize
       parse_options
-      parse_config
+      File.open(@config_file) { |file| parse_config(file) }
+    rescue File::NotFoundError
+      STDERR.puts "Config file '#{@config_file}' not found"
+      exit 1
+    end
+
+    def initialize(io : IO)
+      parse_config(io)
     end
 
     private def parse_options
@@ -40,29 +90,33 @@ module Sparoid
       end
     end
 
-    private def parse_config
-      File.open(@config_file) do |file|
-        @keys.clear
-        @hmac_keys.clear
-        INI.parse(file).each do |_, values|
-          # ignore sections, assume there's only the empty
-          values.each do |k, v|
-            case k
-            when "key"            then @keys << v
-            when "hmac-key"       then @hmac_keys << v
-            when "bind"           then @host = v
-            when "port"           then @port = v.to_i
-            when "open-cmd"       then @open_cmd = v
-            when "close-cmd"      then @close_cmd = v
-            when "nftables-cmd"   then @nftables_cmd = v
-            when "nftablesv6-cmd" then @nftablesv6_cmd = v
+    private def parse_config(io : IO)
+      @profiles.clear
+      INI.parse(io).each do |section, values|
+        if section.downcase == "default"
+          raise Error.new("Section [#{section}] is reserved, put the default profile's settings at the top of the file")
+        end
+        profile = Profile.new(section)
+        has_profile_settings = false
+        values.each do |k, v|
+          next has_profile_settings = true if profile.set?(k, v)
+          case k
+          when "bind", "port"
+            raise Error.new("'#{k}' is not allowed in section [#{section}], set it at the top of the file") unless section.empty?
+            if k == "bind"
+              @host = v
+            else
+              @port = v.to_i
             end
           end
         end
+        # the top level is only a profile if it has more than bind/port,
+        # a partial one (eg. a command but no keys) is an error, not ignored
+        next if section.empty? && !has_profile_settings
+        profile.validate!
+        @profiles << profile
       end
-    rescue File::NotFoundError
-      STDERR.puts "Config file '#{@config_file}' not found"
-      exit 1
+      raise Error.new("No keys configured") if @profiles.empty?
     end
   end
 end

@@ -141,6 +141,76 @@ describe Sparoid::Server do
   ensure
     s.try &.close
   end
+
+  describe "profiles" do
+    it "runs only the action of the profile whose key authenticated the packet" do
+      ssh = [] of String
+      pg = [] of String
+      profiles = [
+        Sparoid::Server::Profile.new("", [KEYS.first], [HMAC_KEYS.first], ->(ip : String, _family : Socket::Family) { ssh << ip; nil }),
+        Sparoid::Server::Profile.new("postgres", [KEYS.last], [HMAC_KEYS.last], ->(ip : String, _family : Socket::Family) { pg << ip; nil }),
+      ]
+      s = Sparoid::Server.new(profiles, ADDRESS)
+      s.bind
+      spawn s.listen
+      Sparoid::Client.send(KEYS.last, HMAC_KEYS.last, ADDRESS.address, ADDRESS.port)
+      Fiber.yield
+      ssh.should be_empty
+      pg.should eq ["127.0.0.1"]
+      Sparoid::Client.send(KEYS.first, HMAC_KEYS.first, ADDRESS.address, ADDRESS.port)
+      Fiber.yield
+      ssh.should eq ["127.0.0.1"]
+      pg.should eq ["127.0.0.1"]
+    ensure
+      s.try &.close
+    end
+
+    it "rejects a packet that mixes the keys of two profiles" do
+      accepted = 0
+      cb = ->(_ip : String, _family : Socket::Family) { accepted += 1; nil }
+      profiles = [
+        Sparoid::Server::Profile.new("", [KEYS.first], [HMAC_KEYS.first], cb),
+        Sparoid::Server::Profile.new("postgres", [KEYS.last], [HMAC_KEYS.last], cb),
+      ]
+      s = Sparoid::Server.new(profiles, ADDRESS)
+      s.bind
+      spawn s.listen
+      Sparoid::Client.send(KEYS.first, HMAC_KEYS.last, ADDRESS.address, ADDRESS.port)
+      Sparoid::Client.send(KEYS.last, HMAC_KEYS.first, ADDRESS.address, ADDRESS.port)
+      Fiber.yield
+      accepted.should eq 0
+      s.@seen_nounces.size.should eq 0
+    ensure
+      s.try &.close
+    end
+
+    it "rejects a replayed packet when several profiles are configured" do
+      accepted = 0
+      cb = ->(_ip : String, _family : Socket::Family) { accepted += 1; nil }
+      profiles = [
+        Sparoid::Server::Profile.new("", [KEYS.first], [HMAC_KEYS.first], cb),
+        Sparoid::Server::Profile.new("postgres", [KEYS.last], [HMAC_KEYS.last], cb),
+      ]
+      s = Sparoid::Server.new(profiles, ADDRESS)
+      data = Sparoid::Client.generate_package(KEYS.last, HMAC_KEYS.last, Sparoid::Message.from_ip("127.0.0.1"))
+      s.process_packet(data, data.size).should eq "127.0.0.1"
+      expect_raises(Exception, "replay-attack") { s.process_packet(data, data.size) }
+      accepted.should eq 1
+    ensure
+      s.try &.close
+    end
+
+    it "refuses the same HMAC key in two profiles" do
+      cb = ->(_ip : String, _family : Socket::Family) { nil }
+      profiles = [
+        Sparoid::Server::Profile.new("", [KEYS.first], [HMAC_KEYS.first], cb),
+        Sparoid::Server::Profile.new("postgres", [KEYS.last], [HMAC_KEYS.first], cb),
+      ]
+      expect_raises(ArgumentError, "HMAC key used more than once") do
+        Sparoid::Server.new(profiles, ADDRESS)
+      end
+    end
+  end
 end
 
 describe Sparoid::Client do
