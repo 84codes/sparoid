@@ -134,6 +134,22 @@ EOF
 bin/sparoid-server --config config.ini
 ```
 
+#### Changing the config file
+
+Verify the config file before it's used, it exits with a non-zero status and prints the error if the file is invalid:
+
+```sh
+sparoid-server --config /etc/sparoid.ini --check
+```
+
+The server reloads the config file on `SIGHUP`, there's no need to restart it. If the file is invalid the error is logged and the server keeps running with the config it had, so a mistake in the file doesn't lock you out. `systemctl reload` runs the check first and fails if the file is invalid:
+
+```sh
+systemctl reload sparoid-server.service
+```
+
+`bind` and `port` can't be changed by a reload, that requires a restart.
+
 ### Client
 
 ```sh

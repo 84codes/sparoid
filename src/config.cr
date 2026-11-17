@@ -1,5 +1,6 @@
 require "option_parser"
 require "ini"
+require "socket"
 require "./version"
 
 module Sparoid
@@ -29,11 +30,29 @@ module Sparoid
         io << (@name.empty? ? "default" : @name)
       end
 
-      protected def validate! : Nil
+      protected def validate!(warnings : Array(String)) : Nil
         raise Error.new("Profile '#{self}' has no key") if @keys.empty?
         raise Error.new("Profile '#{self}' has no hmac-key") if @hmac_keys.empty?
+        unless @keys.all? { |k| k.hexbytes?.try(&.bytesize) == 32 }
+          raise Error.new("Profile '#{self}': key must be 32 bytes hex encoded (64 characters)")
+        end
+        unless @hmac_keys.all? { |k| k.hexbytes?.try(&.bytesize) == 32 }
+          raise Error.new("Profile '#{self}': hmac-key must be 32 bytes hex encoded (64 characters)")
+        end
         if !nftables? && @open_cmd.empty?
           raise Error.new("Profile '#{self}' has no nftables-cmd, nftablesv6-cmd or open-cmd")
+        end
+        # with a nftables command the open/close commands are never run
+        cmds = nftables? ? {"nftables-cmd" => @nftables_cmd, "nftablesv6-cmd" => @nftablesv6_cmd} : {"open-cmd" => @open_cmd, "close-cmd" => @close_cmd}
+        cmds.each do |setting, cmd|
+          next if cmd.empty?
+          # the commands are format strings, %s is replaced with the IP
+          begin
+            formatted = sprintf(cmd, "192.0.2.1")
+          rescue ex : ArgumentError
+            raise Error.new("Profile '#{self}': #{setting} is not a valid format string, #{ex.message} (write a literal % as %%)")
+          end
+          warnings << "Profile '#{self}': #{setting} has no %s, the IP won't be part of the command" unless formatted.includes?("192.0.2.1")
         end
       end
 
@@ -56,6 +75,10 @@ module Sparoid
     getter host = "127.0.0.1"
     getter port = 8484
     getter config_file = "/etc/sparoid.ini"
+    # Only verify the config file, don't start the server
+    getter? check = false
+    # Things in the config file that are suspicious, but not errors
+    getter warnings = Array(String).new
 
     def initialize
       parse_options
@@ -69,10 +92,16 @@ module Sparoid
       parse_config(io)
     end
 
+    # Parse and validate a config file, raises if it's invalid
+    def self.load(config_file : String) : Config
+      File.open(config_file) { |file| new(file) }
+    end
+
     private def parse_options
       OptionParser.parse do |parser|
         parser.banner = "Usage: #{PROGRAM_NAME} [arguments]"
         parser.on("-c CONFIG", "--config=CONFIG", "Path to config file (default: /etc/sparoid.ini)") { |v| @config_file = v }
+        parser.on("-t", "--check", "Verify the config file and exit") { @check = true }
         parser.on("-h", "--help", "Show this help") do
           puts parser
           exit
@@ -103,20 +132,40 @@ module Sparoid
           case k
           when "bind", "port"
             raise Error.new("'#{k}' is not allowed in section [#{section}], set it at the top of the file") unless section.empty?
-            if k == "bind"
-              @host = v
-            else
-              @port = v.to_i
-            end
+            set_listen(k, v)
+          else
+            @warnings << "Unknown setting '#{k}' #{section.empty? ? "at the top of the file" : "in section [#{section}]"}, ignored"
           end
         end
         # the top level is only a profile if it has more than bind/port,
         # a partial one (eg. a command but no keys) is an error, not ignored
         next if section.empty? && !has_profile_settings
-        profile.validate!
+        profile.validate!(@warnings)
         @profiles << profile
       end
       raise Error.new("No keys configured") if @profiles.empty?
+      validate_unique_hmac_keys!
+    end
+
+    private def set_listen(key : String, value : String) : Nil
+      if key == "bind"
+        raise Error.new("Invalid bind address '#{value}', it has to be an IP address") unless Socket::IPAddress.valid?(value)
+        @host = value
+      else
+        port = value.to_i?
+        raise Error.new("Invalid port '#{value}'") unless port && 0 < port < 65536
+        @port = port
+      end
+    end
+
+    # The profile is selected by the HMAC key
+    private def validate_unique_hmac_keys! : Nil
+      seen = Set(Bytes).new
+      @profiles.each do |profile|
+        profile.hmac_keys.each do |hmac_key|
+          seen.add?(hmac_key.hexbytes) || raise Error.new("Profile '#{profile}': hmac-key is already used, each HMAC key must be unique")
+        end
+      end
     end
   end
 end
