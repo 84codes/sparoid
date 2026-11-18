@@ -32,14 +32,26 @@ module Sparoid
     @profiles : Array(Profile)
 
     def initialize(profiles : Enumerable(Profile), @address : Socket::IPAddress)
-      @profiles = profiles.to_a
+      @profiles = self.class.validate(profiles)
+      @socket = UDPSocket.new(@address.family)
+    end
+
+    # Replace the profiles of a running server, eg. when the config is reloaded.
+    # Raises and keeps the current profiles if the new ones are invalid.
+    # The nonce cache is kept, so packets can't be replayed after a reload.
+    def profiles=(profiles : Enumerable(Profile))
+      @profiles = self.class.validate(profiles)
+    end
+
+    protected def self.validate(profiles : Enumerable(Profile)) : Array(Profile)
+      profiles = profiles.to_a
       seen = Set(Bytes).new
-      @profiles.each do |profile|
+      profiles.each do |profile|
         profile.hmac_keys.each do |hmac_key|
           seen.add?(hmac_key) || raise ArgumentError.new("HMAC key used more than once, each HMAC key must be unique (profile '#{profile}')")
         end
       end
-      @socket = UDPSocket.new(@address.family)
+      profiles
     end
 
     def self.new(keys : Enumerable(String), hmac_keys : Enumerable(String), on_accept : AcceptProc, address : Socket::IPAddress)

@@ -95,6 +95,8 @@ After=network.target
 
 [Service]
 ExecStart=/usr/bin/sparoid-server --config /etc/sparoid.ini
+ExecReload=/usr/bin/sparoid-server --config /etc/sparoid.ini --check
+ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 ProtectSystem=full
 MemoryAccounting=true

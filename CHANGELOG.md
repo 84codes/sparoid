@@ -4,6 +4,9 @@
 - Server: the accept log line includes `profile=<name>` for named profiles
 - Server: the HMAC of a packet is compared in constant time
 - A malformed `key` or `hmac-key` is no longer printed in the error message, neither by the server nor the client
+- Server: `--check` (`-t`) verifies the config file and exits, without starting the server
+- Server: reloads the config file on `SIGHUP` (`systemctl reload sparoid-server`). If the file is invalid the error is logged and the server keeps running with its current config. `bind` and `port` still require a restart
+- Server: the config file is validated when it's read: keys must be 32 bytes hex encoded, `bind` must be an IP address, `port` a valid port and the commands valid format strings. Unknown settings and commands without `%s` are logged as warnings
 - Drops Debian 11, it is out of support (LTS ended 2026-08-31) and its packages can no longer be built
 
 ## [2.0.4] - 2026-09-01

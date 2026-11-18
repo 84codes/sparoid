@@ -200,6 +200,41 @@ describe Sparoid::Server do
       s.try &.close
     end
 
+    it "can replace its profiles while running, keeping the nonce cache" do
+      accepted = [] of String
+      s = Sparoid::Server.new([KEYS.first], [HMAC_KEYS.first], ->(_ip : String, _family : Socket::Family) { accepted << "old"; nil }, ADDRESS)
+      old = Sparoid::Client.generate_package(KEYS.first, HMAC_KEYS.first, Sparoid::Message.from_ip("127.0.0.1"))
+      s.process_packet(old, old.size)
+      cb = ->(_ip : String, _family : Socket::Family) { accepted << "new"; nil }
+      s.profiles = [
+        Sparoid::Server::Profile.new("", [KEYS.first], [HMAC_KEYS.first], cb),
+        Sparoid::Server::Profile.new("postgres", [KEYS.last], [HMAC_KEYS.last], cb),
+      ]
+      expect_raises(Exception, "replay-attack") { s.process_packet(old, old.size) }
+      data = Sparoid::Client.generate_package(KEYS.last, HMAC_KEYS.last, Sparoid::Message.from_ip("127.0.0.1"))
+      s.process_packet(data, data.size)
+      accepted.should eq ["old", "new"]
+    ensure
+      s.try &.close
+    end
+
+    it "keeps its profiles if the new ones are invalid" do
+      accepted = 0
+      cb = ->(_ip : String, _family : Socket::Family) { accepted += 1; nil }
+      s = Sparoid::Server.new([KEYS.first], [HMAC_KEYS.first], cb, ADDRESS)
+      expect_raises(ArgumentError, "HMAC key used more than once") do
+        s.profiles = [
+          Sparoid::Server::Profile.new("", [KEYS.last], [HMAC_KEYS.last], cb),
+          Sparoid::Server::Profile.new("postgres", [KEYS.last], [HMAC_KEYS.last], cb),
+        ]
+      end
+      data = Sparoid::Client.generate_package(KEYS.first, HMAC_KEYS.first, Sparoid::Message.from_ip("127.0.0.1"))
+      s.process_packet(data, data.size)
+      accepted.should eq 1
+    ensure
+      s.try &.close
+    end
+
     it "refuses the same HMAC key in two profiles" do
       cb = ->(_ip : String, _family : Socket::Family) { nil }
       profiles = [
