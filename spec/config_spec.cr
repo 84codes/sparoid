@@ -191,6 +191,14 @@ describe Sparoid::Config do
         nftables-cmd = add element inet filter sparoid { %s } comment "100%"
         INI
     end
+    # a huge width isn't an ArgumentError
+    expect_raises(Sparoid::Config::Error, "Profile 'default': open-cmd is not a valid format string") do
+      config <<-INI
+        key = #{"aa" * 32}
+        hmac-key = #{"bb" * 32}
+        open-cmd = open %99999999999s
+        INI
+    end
   end
 
   it "warns about unknown settings and commands without %s" do

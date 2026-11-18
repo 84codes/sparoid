@@ -49,7 +49,8 @@ module Sparoid
           # the commands are format strings, %s is replaced with the IP
           begin
             formatted = sprintf(cmd, "192.0.2.1")
-          rescue ex : ArgumentError
+          rescue ex
+            # not only ArgumentError, a huge width (%99999999999s) overflows
             raise Error.new("Profile '#{self}': #{setting} is not a valid format string, #{ex.message} (write a literal % as %%)")
           end
           warnings << "Profile '#{self}': #{setting} has no %s, the IP won't be part of the command" unless formatted.includes?("192.0.2.1")

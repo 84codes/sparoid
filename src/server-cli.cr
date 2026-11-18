@@ -83,7 +83,7 @@ end
 
 begin
   c = Sparoid::Config.new
-  puts "Listening: #{c.host}:#{c.port}"
+  puts "Listening: #{c.host}:#{c.port}" unless c.check?
   print_config(c)
   if c.check?
     puts "Config file '#{c.config_file}' is valid"
