@@ -144,12 +144,12 @@ module Sparoid
       [public_ipv4, public_ipv6].compact.map { |ip| Message.from_ip(ip) }
     end
 
-    # IPv4: from icanhazip
+    # IPv4: from the first public IP provider that answers
     private def self.public_ipv4 : String?
       PublicIP.ipv4
     end
 
-    # IPv6: prefer OS-selected outgoing address, fall back to icanhazip
+    # IPv6: prefer OS-selected outgoing address, fall back to the public IP providers
     private def self.public_ipv6 : String?
       IPv6.public_ipv6 || PublicIP.ipv6
     end
