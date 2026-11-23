@@ -1,3 +1,8 @@
+## [Unreleased]
+- Client: falls back to other public IP providers when icanhazip.com fails: IPv4 tries ipv4.icanhazip.com, checkip.amazonaws.com, then api.ipify.org; IPv6 (if the OS has no global IPv6 source address) tries ipv6.icanhazip.com, then api6.ipify.org. A provider is only asked if the previous one failed
+- Client: the public IP lookups time out (3 s connect, 5 s read), IPv4 and IPv6 are looked up concurrently, and an IPv6 answer must be a global address
+- Client: an empty public IP cache file is not trusted, so a failed lookup is retried on the next knock instead of failing for 60 s
+
 ## 2.1.0 - 2026-11-17
 - Server: profiles, each `[section]` in the config file has its own keys and its own command, so that different keys can open up for different services (eg. SSH and PostgreSQL). The profile is selected by the HMAC key that authenticates the packet. Config files without sections work as before
 - Server: refuses to start if a profile lacks a key, a hmac-key or a command, if no keys are configured at all, or if the same HMAC key is used in more than one profile
